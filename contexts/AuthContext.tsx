@@ -307,15 +307,147 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Initialize with mock data
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
+  const initializeData = async () => {
+    setIsLoading(true);
       
-      // Check for remembered user
+     try {
+      // 1. Check remembered user
       const savedUser = localStorage.getItem('zeelink_user');
       if (savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          setUser(parsedUser);
+        const parsedUser = JSON.parse(savedUser);
+
+        // ดึงข้อมูลจาก Supabase
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', parsedUser.email)
+          .single();
+          
+        if (!userError && userData) {
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            photoUrl: userData.photo_url,
+            role: userData.role as Role,
+            isBanned: userData.is_banned
+          });
+          
+          // ดึง profile
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', userData.id)
+            .single();
+            
+          if (profileData) {
+            setProfile({
+              id: profileData.id,
+              userId: profileData.user_id,
+              uid: profileData.uid || '',
+              username: profileData.username,
+              displayName: profileData.display_name,
+              photoUrl: profileData.photo_url,
+              bio: profileData.bio,
+              tags: profileData.tags || [],
+              region: profileData.region,
+              province: profileData.province,
+              district: profileData.district,
+              subDistrict: profileData.sub_district,
+              postalCode: profileData.postal_code,
+              showOnExplore: profileData.show_on_explore,
+              likes: profileData.likes || 0,
+              views: profileData.views || 0,
+              themeConfig: profileData.theme_config,
+              links: profileData.links || [],
+              createdAt: profileData.created_at,
+              updatedAt: profileData.updated_at
+            });
+          }
+        }
+      }
+
+      // 2. Load users list
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('show_on_explore', true);
+        
+      if (!usersError && usersData) {
+        const profiles = usersData.map(p => ({
+          id: p.id,
+          userId: p.user_id,
+          uid: p.uid || '',
+          username: p.username,
+          displayName: p.display_name,
+          photoUrl: p.photo_url,
+          bio: p.bio,
+          tags: p.tags || [],
+          region: p.region,
+          province: p.province,
+          district: p.district,
+          subDistrict: p.sub_district,
+          postalCode: p.postal_code,
+          showOnExplore: p.show_on_explore,
+          likes: p.likes || 0,
+          views: p.views || 0,
+          themeConfig: p.theme_config,
+          links: p.links || [],
+          createdAt: p.created_at,
+          updatedAt: p.updated_at
+        }));
+        setUsersList(profiles);
+      }
+      
+      // 3. Load questions
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('status', 'approved')
+        .order('votes', { ascending: false });
+        
+      if (!questionsError && questionsData) {
+        const questions = questionsData.map(q => ({
+          id: q.id,
+          userId: q.user_id,
+          username: q.username,
+          text: q.text,
+          votes: q.votes,
+          createdAt: q.created_at,
+          votedUserIds: q.voted_user_ids || [],
+          status: q.status as QuestionStatus
+        }));
+        setQuestions(questions);
+      }
+      
+      // 4. Load popups
+      const { data: popupsData, error: popupsError } = await supabase
+        .from('popups')
+        .select('*')
+        .eq('is_active', true);
+        
+      if (!popupsError && popupsData) {
+        const popups = popupsData.map(p => ({
+          id: p.id,
+          title: p.title,
+          imageUrl: p.image_url,
+          linkUrl: p.link_url,
+          isActive: p.is_active,
+          frequency: p.frequency as any
+        }));
+        setPopups(popups);
+        if (popups.length > 0) setActivePopup(popups[0]);
+      }
+      
+    } catch (error) {
+      console.error('Initialization error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  initializeData();
+}, []);
           
           // If admin, set admin profile
           if (parsedUser.email === 'zbcd1053@gmail.com') {
