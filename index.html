@@ -212,26 +212,5 @@
   <body>
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
-
-<input id="msg" placeholder="ถาม AI..." />
-<button onclick="askAI()">ถาม</button>
-
-<pre id="reply"></pre>
-
-<script>
-async function askAI() {
-  const userText = document.getElementById("msg").value;
-
-  const response = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: userText })
-  });
-
-  const data = await response.json();
-  document.getElementById("reply").innerText = data.reply || "Error";
-}
-</script>
-    
 </body>
 </html>
