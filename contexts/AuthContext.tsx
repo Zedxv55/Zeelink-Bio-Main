@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Profile, SystemPopup, Question, Role } from '../types'; // ← ต้อง import Role
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
-import { supabase } from '../supabaseClient'; // ← ต้อง import supabase
+import { supabase } from './supabaseClient';  // ✅ ถูกต้อง เพราะอยู่ใน contexts/ เหมือนกัน
 
 interface AuthContextType {
   user: User | null;
