@@ -1,0 +1,17 @@
+# Dependencies (install with `npm install`, never commit)
+node_modules/
+
+# Build output
+dist/
+.vite/
+*.local
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
