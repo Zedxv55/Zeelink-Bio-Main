@@ -15,7 +15,7 @@ const App: React.FC = () => {
   const { isLoading, activePopup, closeActivePopup } = useAuth();
 
   if (isLoading) {
-    return <div className="h-screen flex items-center justify-center bg-gray-900 text-white">Loading Zeelink System...</div>;
+    return <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading Zeelink System...</div>;
   }
 
   return (

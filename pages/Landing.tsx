@@ -1,113 +1,185 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Map, Vote, LogIn } from 'lucide-react';
-import { ThaiBackground } from '../components/ThaiBackground';
+import { LayoutDashboard, Map, Vote, LogIn, ArrowRight } from 'lucide-react';
 
 export const Landing: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [generic, setGeneric] = useState(false);
+  const stepsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sections = stepsRef.current?.querySelectorAll<HTMLElement>('.nb-step') ?? [];
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    sections.forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  }, []);
+
   const cards = [
     {
-      title: "สร้าง Dashboard",
-      desc: "ตกแต่งหน้าโปรไฟล์ของคุณ",
-      icon: <LayoutDashboard className="w-12 h-12 text-white drop-shadow-md" />,
-      link: "/dashboard",
-      action: "เริ่มสร้าง",
-      glassClass: "border-cyan hover-glow-cyan",
-      btnClass: "bg-cyan-500 hover:bg-cyan-600",
-      accent: "var(--accent-cyan)"
+      title: 'สร้าง Dashboard',
+      desc: 'ตกแต่งหน้าโปรไฟล์รวมลิงก์ของคุณ',
+      icon: <LayoutDashboard className="w-7 h-7" />,
+      link: '/dashboard',
+      tag: '01 / PROFILE',
+      accent: 'var(--accent-cyan)',
     },
     {
-      title: "Online",
-      desc: "สำรวจผู้ใช้บนแผนที่",
-      icon: <Map className="w-12 h-12 text-white drop-shadow-md" />,
-      link: "/explore",
-      action: "เข้าสำรวจ",
-      glassClass: "border-purple hover-glow-purple",
-      btnClass: "bg-purple-500 hover:bg-purple-600",
-      accent: "var(--accent-purple)"
+      title: 'Online — สำรวจแผนที่',
+      desc: 'ค้นหาคนไทยใกล้เคียงบนแผนที่',
+      icon: <Map className="w-7 h-7" />,
+      link: '/explore',
+      tag: '02 / EXPLORE',
+      accent: 'var(--accent-purple)',
     },
     {
-      title: "โหวต",
-      desc: "สังคมแห่งการแชร์",
-      icon: <Vote className="w-12 h-12 text-white drop-shadow-md" />,
-      link: "/vote",
-      action: "ดูอันดับ",
-      glassClass: "border-pink hover-glow-pink",
-      btnClass: "bg-pink-500 hover:bg-pink-600",
-      accent: "var(--accent-pink)"
-    }
+      title: 'โหวต',
+      desc: 'สังคมแห่งการแชร์และตัดสินใจ',
+      icon: <Vote className="w-7 h-7" />,
+      link: '/vote',
+      tag: '03 / VOTE',
+      accent: 'var(--accent-pink)',
+    },
   ];
 
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center pt-16 px-4 overflow-hidden">
-      {/* Background Layer */}
-      <ThaiBackground />
-      
-      {/* Content Layer */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto text-center">
-        <div className="mb-12 space-y-4">
-          <h1 className="text-5xl md:text-7xl font-bold leading-tight drop-shadow-lg text-gradient-primary">
-            Zeelink Platform <br/>
-            <span style={{ color: 'var(--text-primary)' }}>เชื่อมต่อคนไทย</span>
-          </h1>
-          <h2 className="text-xl md:text-2xl opacity-80" style={{ color: 'var(--text-secondary)' }}>
-            สร้างโปรไฟล์ • ค้นหาเพื่อน • ร่วมโหวต
-          </h2>
-        </div>
+    <div className="relative" ref={stepsRef}>
+      <div className="nb-rail" />
+
+      {/* ===== HERO ===== */}
+      <header className="px-6 pt-24 pb-10" style={{ maxWidth: 'var(--maxw)', margin: '0 auto' }}>
+        <p className="nb-eyebrow">แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย</p>
+        <h1 className="nb-h1">
+          Zeelink<br />
+          <span style={{ color: 'var(--blueprint)' }}>เชื่อมคนไทย ด้วยพอร์ตโฟลิโอที่มีชีวิต</span>
+        </h1>
+        <p className="nb-lede">
+          หน้าโปรไฟล์รวมลิงก์ สำรวจคนบนแผนที่ และร่วมโหวตกับชุมชน — ออกแบบมาเพื่อครีเอเตอร์ไทย โดยคนไทย
+        </p>
 
         {!user && (
-          <div className="mb-16 animate-bounce-slow">
+          <div className="mt-8">
             <button
               onClick={() => navigate('/login')}
-              className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold transition-all duration-200 glass-card hover:scale-105 border-green hover-glow-green"
-              style={{ color: 'var(--text-primary)' }}
+              className="nb-btn nb-btn-primary"
             >
-              <LogIn className="mr-2 w-6 h-6" />
-              เข้าสู่ระบบ (Login)
+              <LogIn className="mr-2 w-4 h-4" /> เข้าสู่ระบบ
             </button>
           </div>
         )}
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full px-4">
+      {/* ===== HOW IT WORKS (sequence) ===== */}
+      <section className="nb-step">
+        <div className="nb-step-num">01</div>
+        <h2 className="nb-h2">สมัคร และสร้างโปรไฟล์</h2>
+        <p className="nb-body">เริ่มจากอีเมลเดียว สร้างหน้าโปรไฟล์รวมลิงก์ ปรับธีมสีและภูมิภาคของคุณได้ทันที</p>
+        <div className="nb-pin-card">
+          <div className="nb-pin-row"><div className="nb-pin-label">หัวข้อ</div><div className="nb-pin-value">พอร์ตโฟลิโอส่วนตัวของคุณ</div></div>
+          <div className="nb-pin-row"><div className="nb-pin-label">ทำอะไร</div><div className="nb-pin-value">รวมลิงก์ สรุปตัวตน ปรับธีม</div></div>
+          <div className="nb-pin-row"><div className="nb-pin-label">จบใน</div><div className="nb-pin-value">ไม่กี่นาที</div></div>
+        </div>
+      </section>
+
+      <section className="nb-step">
+        <div className="nb-step-num">02</div>
+        <h2 className="nb-h2">สำรวจคนบนแผนที่</h2>
+        <p className="nb-body">ดูโปรไฟล์คนไทยทั่วประเทศบนแผนที่ แยกตามภาคและจังหวัด แล้วเจอกันได้ง่ายขึ้น</p>
+        <div className="nb-pin-card">
+          <div className="nb-pin-row"><div className="nb-pin-label">มุมมอง</div><div className="nb-pin-value">แผนที่แบ่งตามภาค / จังหวัด</div></div>
+          <div className="nb-pin-row"><div className="nb-pin-label">ค้นหา</div><div className="nb-pin-value">ใกล้เคียง · ตามหมวดหมู่</div></div>
+        </div>
+      </section>
+
+      <section className="nb-step">
+        <div className="nb-step-num">03</div>
+        <h2 className="nb-h2">โหวต และแชร์</h2>
+        <p className="nb-body">ตั้งคำถามกับชุมชน โหวตสิ่งที่อยากเห็น และช่วยกันตัดสินทิศทางของแพลตฟอร์ม</p>
+        <div className="nb-pin-card">
+          <div className="nb-pin-row"><div className="nb-pin-label">กิจกรรม</div><div className="nb-pin-value">ถาม · โหวต · เรียงอันดับ</div></div>
+          <div className="nb-pin-row"><div className="nb-pin-label">ผลลัพธ์</div><div className="nb-pin-value">เสียงของคนไทยนำทางการพัฒนา</div></div>
+        </div>
+      </section>
+
+      {/* ===== FEATURE CARDS ===== */}
+      <section className="nb-step">
+        <div className="nb-step-num">04</div>
+        <h2 className="nb-h2">สามสิ่งที่คุณทำได้</h2>
+        <p className="nb-body">ทุกฟีเจอร์เริ่มจากคำถามเดียว: หน้านี้มีไว้ทำอะไร — ไม่ใช่ของตกแต่ง</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
           {cards.map((card, idx) => (
-            <div 
-              key={idx} 
-              className={`glass-card p-10 relative group ${card.glassClass}`}
-            >
-              {/* Colorful Top Border */}
-              <div className="absolute top-0 left-0 right-0 h-1" style={{ background: card.accent, borderRadius: '16px 16px 0 0' }}></div>
-
-              <div className="flex flex-col items-center space-y-6 relative z-10">
-                <div className="p-4 rounded-full shadow-inner" style={{ background: card.accent }}>
-                  {card.icon}
-                </div>
-                <h3 className="text-2xl font-bold">
-                  {card.title}
-                </h3>
-                <p className="opacity-80">
-                  {card.desc}
-                </p>
-                {user ? (
-                  <Link to={card.link} className={`mt-4 px-8 py-3 rounded-full text-white font-bold shadow-lg transition-colors w-full ${card.btnClass}`}>
-                    {card.action}
-                  </Link>
-                ) : (
-                  <button onClick={() => navigate('/login')} className="mt-4 px-8 py-3 rounded-full bg-gray-500/20 cursor-not-allowed w-full backdrop-blur-sm opacity-50">
-                    กรุณาล็อกอิน
-                  </button>
-                )}
+            <div key={idx} className="nb-card group">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                style={{ background: card.accent, color: '#fff' }}
+              >
+                {card.icon}
               </div>
+              <p className="nb-eyebrow" style={{ marginBottom: 6 }}>{card.tag}</p>
+              <h3 className="text-xl font-bold mb-2" style={{ fontFamily: 'var(--thai)' }}>{card.title}</h3>
+              <p className="nb-body" style={{ marginBottom: 18 }}>{card.desc}</p>
+              {user ? (
+                <Link to={card.link} className="nb-btn w-full">
+                  เปิด <ArrowRight className="ml-1 w-4 h-4" />
+                </Link>
+              ) : (
+                <button onClick={() => navigate('/login')} className="nb-btn w-full opacity-70">
+                  เข้าสู่ระบบก่อน
+                </button>
+              )}
             </div>
           ))}
         </div>
+      </section>
 
-        <div className="mt-20 text-sm opacity-60" style={{ color: 'var(--text-muted)' }}>
-          <p>© 2026 Zeelink Thailand. Version 2.0 Production Ready.</p>
+      {/* ===== CRITIQUE (shows reasoning) ===== */}
+      <section className="nb-step">
+        <div className="nb-step-num">05</div>
+        <h2 className="nb-h2">สิ่งที่เราตัดสินใจเก็บ และตัดทิ้ง</h2>
+        <p className="nb-body">งานดีไซน์จาก AI มักวนอยู่ไม่กี่แบบ เราเช็คตัวเองก่อนลงมือเสมอ</p>
+        <div className="nb-critique-list">
+          <div className="nb-critique-item cut"><span className="nb-tag cut">ตัดทิ้ง</span><span className="nb-text">พื้นดำ + สีสะท้อนแสง neon จุดเดียว</span></div>
+          <div className="nb-critique-item cut"><span className="nb-tag cut">ตัดทิ้ง</span><span className="nb-text">เซอริฟคอนทราสต์สูงบนครีม (โคลน AI ทั่วไป)</span></div>
+          <div className="nb-critique-item keep"><span className="nb-tag keep">เก็บไว้</span><span className="nb-text">กระดาษมีเส้นบรรทัด + สีแต่ละสีทำหน้าที่ต่างกันจริง</span></div>
+          <div className="nb-critique-item keep"><span className="nb-tag keep">เก็บไว้</span><span className="nb-text">ฟอนต์โทนเครื่องพิมพ์ (IBM Plex) แทนจอประกาศ</span></div>
         </div>
-      </div>
+      </section>
+
+      {/* ===== SIGNATURE TOGGLE ===== */}
+      <section className="nb-step" style={{ paddingBottom: 40 }}>
+        <div className="nb-step-num">06</div>
+        <h2 className="nb-h2">ลองสลับดูความต่าง</h2>
+        <p className="nb-body">กดสลับสองปุ่มด้านล่าง การ์ดใบเดียวกันเปลี่ยนไปแค่ไหน เมื่อเปลี่ยนจาก "ทั่วไป" เป็น "ตั้งใจ"</p>
+        <div className="nb-toggle-wrap">
+          <button className={`nb-toggle-btn ${!generic ? 'active' : ''}`} onClick={() => setGeneric(false)}>แบบตั้งใจ (Zeelink)</button>
+          <button className={`nb-toggle-btn ${generic ? 'active' : ''}`} onClick={() => setGeneric(true)}>แบบทั่วไป</button>
+        </div>
+        <div
+          className="nb-demo-card"
+          style={generic ? { background: '#F4F1EA', color: '#2b2620' } : undefined}
+        >
+          <p className="nb-demo-eyebrow" style={generic ? { fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#B0603F', letterSpacing: 0, textTransform: 'none' } : undefined}>
+            ตัวอย่างโปรไฟล์
+          </p>
+          <h3 className="nb-demo-title" style={generic ? { fontFamily: 'Georgia, serif' } : undefined}>สมชาย · ครีเอเตอร์ไทย</h3>
+          <p className="nb-demo-text">โปรไฟล์นี้รวมลิงก์ทั้งหมดของฉัน ปรับธีมได้ และเจอบนแผนที่ได้ง่าย</p>
+          <span className="nb-btn nb-btn-primary" style={generic ? { background: '#D97757', borderColor: '#D97757' } : undefined}>ดูโปรไฟล์</span>
+        </div>
+      </section>
+
+      <footer className="nb-footer">
+        <p className="nb-footer-line">Zeelink ถูกออกแบบด้วยกระบวนการเดียวกับที่คุณเห็นข้างบน — คิดก่อนลงมือเสมอ</p>
+        <div className="nb-signoff">— Zeelink, แพลตฟอร์มพอร์ตโฟลิโอสำหรับคนไทย</div>
+      </footer>
     </div>
   );
 };
