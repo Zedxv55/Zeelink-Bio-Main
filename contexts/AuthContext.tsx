@@ -199,13 +199,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('อีเมลนี้ถูกใช้งานแล้ว');
       }
 
-      // สร้างแถว users + profiles ถ้ายังไม่มี (แอปใช้ตาราง users แยกต่างหากจาก auth.users)
-      await ensureUserRecord(email, name);
-
       // ถ้าเปิด Confirm email → session จะเปล่า (ต้องยืนยันอีเมลก่อน)
+      // ต้องเช็คก่อน: ถ้าไม่มี session ห้ามสร้างแถว เพราะจะรันในบทบาท anon และถูก RLS บล็อก
       if (!data.session) {
         return { user: null, needsConfirmation: true };
       }
+
+      // มี session แล้ว (ล็อกอินสำเร็จ หรือเปิด auto-confirm) → สร้างแถว users + profiles ได้
+      // สร้างแถว users + profiles ถ้ายังไม่มี (แอปใช้ตาราง users แยกต่างหากจาก auth.users)
+      await ensureUserRecord(email, name);
 
       const user = await loadUserByEmail(email);
       return { user, needsConfirmation: false };
@@ -454,10 +456,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (fetchError) throw fetchError;
       const votedUserIds = question.voted_user_ids || [];
       if (votedUserIds.includes(user.id)) return;
-      const { error: updateError } = await supabase.from('questions').update({
-        votes: (question.votes || 0) + 1,
-        voted_user_ids: [...votedUserIds, user.id]
-      }).eq('id', questionId);
+      // ใช้ RPC vote_question (SECURITY DEFINER) → ไม่ติด RLS บน update
+      // เพิ่มโหวต + ผนวก auth.uid() ให้คนโหวต (ไม่อ้าง user_id)
+      const { error: updateError } = await supabase.rpc('vote_question', { q_id: questionId });
       if (updateError) throw updateError;
       setQuestions(prev => prev.map(q =>
         q.id === questionId && !q.votedUserIds.includes(user.id)
