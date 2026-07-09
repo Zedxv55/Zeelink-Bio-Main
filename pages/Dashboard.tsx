@@ -5,6 +5,7 @@ import { Link, Profile, ThemeConfig } from '../types';
 import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
+import { Button } from '../components/ui/Button';
 import { supabase } from '../contexts/supabaseClient';
 
 export const Dashboard: React.FC = () => {
@@ -319,7 +320,7 @@ export const Dashboard: React.FC = () => {
                   </div>
               )}
               
-              <button onClick={handleSave} className="w-full py-4 bg-[var(--orange)] text-white rounded-xl font-bold shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"><Save size={20} className="mr-2"/> บันทึก & สร้างหน้าเว็บ</button>
+              <Button variant="primary" size="lg" fullWidth leftIcon={<Save size={20} />} onClick={handleSave}>บันทึก &amp; สร้างหน้าเว็บ</Button>
               
               {shareLink && (
                   <div className="mt-4 p-4 bg-green-500/10 rounded-xl border border-green-500 flex justify-between items-center glass-card">

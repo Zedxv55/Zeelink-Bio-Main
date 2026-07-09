@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../contexts/supabaseClient';
 import { ThaiBackground } from '../components/ThaiBackground';
+import { Button } from '../components/ui/Button';
+import { fonts, fontSize, spacing, radius } from '../lib/designTokens';
 import { Lock, Mail, User, Facebook } from 'lucide-react';
 
 // โลโก้ Google "G" แบบ inline SVG (lucide ไม่มีไอคอน Google)
@@ -26,6 +28,7 @@ export const Login: React.FC = () => {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { login, loginWithOAuth, register, resetPassword } = useAuth();
   const navigate = useNavigate();
 
@@ -47,36 +50,41 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     setInfo('');
+    setSubmitting(true);
 
-    if (mode === 'forgot') {
-      const ok = await resetPassword(email);
-      if (ok) setInfo('✅ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว');
-      else setError('ไม่สามารถส่งลิงก์ได้ กรุณาตรวจสอบอีเมล');
-      return;
-    }
-
-    if (mode === 'setpw') {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) { setError('ตั้งรหัสผ่านไม่สำเร็จ ' + error.message); return; }
-      alert('✅ ตั้งรหัสผ่านใหม่สำเร็จแล้ว');
-      navigate('/dashboard');
-      return;
-    }
-
-    if (mode === 'login') {
-      const user = await login(email, password, remember);
-      if (user) navigate(user.role === 'admin' ? '/admin' : '/dashboard');
-      else setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
-    } else {
-      const res = await register(email, password, name);
-      if (res.user && !res.needsConfirmation) {
-        alert('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
-        navigate(res.user.role === 'admin' ? '/admin' : '/dashboard');
-      } else if (res.needsConfirmation) {
-        setInfo('📧 กรุณายืนยันอีเมลในกล่องจดหมายของคุณ ก่อนเข้าใช้งาน');
-      } else {
-        setError('ไม่สามารถสมัครได้ อาจเนื่องจากอีเมลซ้ำหรือรหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)');
+    try {
+      if (mode === 'forgot') {
+        const ok = await resetPassword(email);
+        if (ok) setInfo('✅ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว');
+        else setError('ไม่สามารถส่งลิงก์ได้ กรุณาตรวจสอบอีเมล');
+        return;
       }
+
+      if (mode === 'setpw') {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) { setError('ตั้งรหัสผ่านไม่สำเร็จ ' + error.message); return; }
+        alert('✅ ตั้งรหัสผ่านใหม่สำเร็จแล้ว');
+        navigate('/dashboard');
+        return;
+      }
+
+      if (mode === 'login') {
+        const user = await login(email, password, remember);
+        if (user) navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+        else setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
+      } else {
+        const res = await register(email, password, name);
+        if (res.user && !res.needsConfirmation) {
+          alert('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
+          navigate(res.user.role === 'admin' ? '/admin' : '/dashboard');
+        } else if (res.needsConfirmation) {
+          setInfo('📧 กรุณายืนยันอีเมลในกล่องจดหมายของคุณ ก่อนเข้าใช้งาน');
+        } else {
+          setError('ไม่สามารถสมัครได้ อาจเนื่องจากอีเมลซ้ำหรือรหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)');
+        }
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -170,13 +178,9 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          <button
-            type="submit"
-            className="w-full py-3 rounded-lg font-bold transition-colors"
-            style={{ background: 'var(--orange)', color: '#fff' }}
-          >
+          <Button type="submit" variant="primary" size="lg" fullWidth loading={submitting}>
             {mode === 'forgot' ? 'ส่งลิงก์รีเซ็ต' : mode === 'setpw' ? 'ตั้งรหัสผ่านใหม่' : mode === 'login' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
-          </button>
+          </Button>
 
           {mode !== 'setpw' && (
             <>
@@ -186,19 +190,14 @@ export const Login: React.FC = () => {
                 <div className="h-px flex-1" style={{ background: 'var(--glass-border)' }} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleOAuth('google')}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors"
-                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
-                >
-                  <GoogleIcon /> Google
-                </button>
+                <Button type="button" variant="ghost" fullWidth leftIcon={<GoogleIcon />} onClick={() => handleOAuth('google')}>
+                  Google
+                </Button>
                 <button
                   type="button"
                   onClick={() => handleOAuth('facebook')}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors"
-                  style={{ background: '#1877F2', color: '#fff' }}
+                  className="flex items-center justify-center gap-2 rounded-lg font-bold transition-colors"
+                  style={{ background: '#1877F2', color: '#fff', padding: '11px 20px', fontFamily: fonts.display, fontSize: fontSize('base') }}
                 >
                   <Facebook size={20} /> Facebook
                 </button>

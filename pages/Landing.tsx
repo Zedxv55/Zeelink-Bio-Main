@@ -1,6 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { fonts, fontSize, lineHeight, spacing, layout } from '../lib/designTokens';
 import { LayoutDashboard, Map, Vote, LogIn, ArrowRight, Sparkles, Globe } from 'lucide-react';
 
 // แผนที่ไทยแบบพิกเซล (1 = บก, 0 = ทะเล) — สัดส่วนคร่าวๆ
@@ -69,37 +72,37 @@ export const Landing: React.FC = () => {
       <span className="float-deco" style={{ top: '70%', right: '8%', animationDelay: '1.5s' }}>🗺️</span>
 
       {/* ===== HERO (โฆษณา) ===== */}
-      <header className="px-6 pt-28 pb-12" style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <p className="pixel-tag" style={{ marginBottom: 18 }}>THAI CREATOR PLATFORM</p>
-        <h1 className="pixel-h1" style={{ marginBottom: 22 }}>
+      <header className="px-6 pt-28 pb-12" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
+        <p className="pixel-tag" style={{ marginBottom: spacing.md, fontFamily: fonts.mono, fontSize: fontSize('sm'), letterSpacing: '0.12em', color: 'var(--blueprint)' }}>THAI CREATOR PLATFORM</p>
+        <h1 className="pixel-h1" style={{ marginBottom: spacing.lg, fontFamily: fonts.pixel, fontSize: 'clamp(34px, 7vw, 64px)', lineHeight: lineHeight.tight, color: 'var(--text-primary)', textShadow: `0 0 16px var(--orange-soft), 4px 4px 0 var(--orange)` }}>
           ZEELINK
         </h1>
-        <p className="pixel-lede" style={{ marginBottom: 10 }}>
+        <p className="pixel-lede" style={{ marginBottom: spacing.sm, fontFamily: fonts.body, fontSize: fontSize('lg'), lineHeight: lineHeight.normal, color: 'var(--text-secondary)', maxWidth: '60ch' }}>
           แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย — เชื่อมครีเอเตอร์และคนทั่วประเทศ
           ด้วยหน้าโปรไฟล์สวยๆ บนแผนที่ และชุมชนที่โหวตไปพร้อมกัน
         </p>
-        <p className="pixel-lede" style={{ marginBottom: 28, color: 'var(--orange)' }}>
+        <p className="pixel-lede" style={{ marginBottom: spacing.xl, fontFamily: fonts.body, fontSize: fontSize('lg'), lineHeight: lineHeight.normal, color: 'var(--orange)', fontWeight: 600 }}>
           ครีเอเตอร์ไทย มาสร้างบ้านของตัวเองได้แล้ววันนี้
         </p>
 
         <div className="flex flex-wrap gap-4">
           {!user ? (
-            <button onClick={() => navigate('/login')} className="pixel-btn">
-              <LogIn className="w-4 h-4" /> เข้าสู่ระบบ
-            </button>
+            <Button variant="primary" size="lg" leftIcon={<LogIn size={16} />} onClick={() => navigate('/login')}>
+              เข้าสู่ระบบ
+            </Button>
           ) : (
-            <Link to="/dashboard" className="pixel-btn">
-              <LayoutDashboard className="w-4 h-4" /> ไปหน้าแดชบอร์ด
-            </Link>
+            <Button variant="primary" size="lg" leftIcon={<LayoutDashboard size={16} />} onClick={() => navigate('/dashboard')}>
+              ไปหน้าแดชบอร์ด
+            </Button>
           )}
-          <button onClick={() => navigate('/explore')} className="pixel-btn alt">
-            <Globe className="w-4 h-4" /> สำรวจแผนที่
-          </button>
+          <Button variant="outline" size="lg" leftIcon={<Globe size={16} />} onClick={() => navigate('/explore')}>
+            สำรวจแผนที่
+          </Button>
         </div>
       </header>
 
       {/* ===== PIXEL MAP (แผนที่ไทย animation) ===== */}
-      <section className="px-6 py-10" style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <section className="px-6 py-10" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div className="pixel-map-wrap">
             <div className="pixel-map" style={{ gridTemplateColumns: `repeat(20, ${CELL}px)` }}>
@@ -119,11 +122,11 @@ export const Landing: React.FC = () => {
             ))}
           </div>
           <div>
-            <p className="pixel-tag" style={{ marginBottom: 14 }}>EXPLORE MAP</p>
-            <h2 className="pixel-font" style={{ fontSize: 18, color: 'var(--text-primary)', marginBottom: 14, lineHeight: 1.5 }}>
+            <p className="pixel-tag" style={{ marginBottom: spacing.md, fontFamily: fonts.mono, fontSize: fontSize('sm'), color: 'var(--blueprint)' }}>EXPLORE MAP</p>
+            <h2 className="pixel-font" style={{ fontFamily: fonts.pixel, fontSize: '22px', color: 'var(--text-primary)', marginBottom: spacing.md, lineHeight: lineHeight.tight }}>
               เจอคนไทย<br />บนแผนที่
             </h2>
-            <p className="pixel-lede">
+            <p className="pixel-lede" style={{ fontFamily: fonts.body, fontSize: fontSize('base'), lineHeight: lineHeight.normal, color: 'var(--text-secondary)' }}>
               ทุกจังหวัดมีพอร์ตของตัวเอง แยกตามภาคเหนือ กลาง อีสาน ใต้ —
               กดที่พินสว่างเพื่อดูโปรไฟล์ในพื้นที่นั้น สำรวจเพื่อนครีเอเตอร์ทั่วไทยได้ในที่เดียว
             </p>
@@ -132,53 +135,53 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ===== HOW IT WORKS (ฟังก์ชันการใช้) ===== */}
-      <section className="px-6 py-10" style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <p className="pixel-tag" style={{ marginBottom: 18 }}>HOW IT WORKS</p>
+      <section className="px-6 py-10" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
+        <p className="pixel-tag" style={{ marginBottom: spacing.md, fontFamily: fonts.mono, fontSize: fontSize('sm'), color: 'var(--blueprint)' }}>HOW IT WORKS</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {STEPS.map((s, i) => (
-            <div key={i} className="pixel-card">
-              <div style={{ color: 'var(--orange)', marginBottom: 12 }}>{s.icon}</div>
-              <h3 className="pixel-font" style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, lineHeight: 1.5 }}>
+            <div key={i} className="pixel-card" style={{ padding: spacing.lg }}>
+              <div style={{ color: 'var(--orange)', marginBottom: spacing.sm, fontSize: '28px' }}>{s.icon}</div>
+              <h3 className="pixel-font" style={{ fontFamily: fonts.pixel, fontSize: '13px', color: 'var(--text-primary)', marginBottom: spacing.sm, lineHeight: lineHeight.tight }}>
                 {`0${i + 1}`} {s.title}
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>{s.desc}</p>
+              <p style={{ fontFamily: fonts.body, color: 'var(--text-muted)', fontSize: fontSize('base'), lineHeight: lineHeight.normal }}>{s.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ===== PROPOSED PORTFOLIO (พอร์ตที่เสนอ) ===== */}
-      <section className="px-6 py-10" style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <p className="pixel-tag" style={{ marginBottom: 10 }}>YOUR PORTFOLIO</p>
-        <h2 className="pixel-font" style={{ fontSize: 18, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.5 }}>
+      <section className="px-6 py-10" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
+        <p className="pixel-tag" style={{ marginBottom: spacing.sm, fontFamily: fonts.mono, fontSize: fontSize('sm'), color: 'var(--blueprint)' }}>YOUR PORTFOLIO</p>
+        <h2 className="pixel-font" style={{ fontFamily: fonts.pixel, fontSize: '20px', color: 'var(--text-primary)', marginBottom: spacing.xs, lineHeight: lineHeight.tight }}>
           นี่คือพอร์ตที่คุณจะได้
         </h2>
-        <p className="pixel-lede" style={{ marginBottom: 22 }}>
+        <p className="pixel-lede" style={{ marginBottom: spacing.xl, fontFamily: fonts.body, fontSize: fontSize('base'), color: 'var(--text-secondary)', lineHeight: lineHeight.normal }}>
           ตัวอย่างโปรไฟล์บน Zeelink — ปรับธีมสี ใส่ลิงก์ หรือแชร์ให้คนอื่นเจอได้บนแผนที่
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {SAMPLES.map((p, i) => (
-            <div key={i} className={`pixel-card ${p.theme}`}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <div key={i} className={`pixel-card ${p.theme}`} style={{ padding: spacing.lg }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
                 <img
                   src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random`}
                   alt={p.name}
-                  style={{ width: 48, height: 48, border: '2px solid var(--orange)' }}
+                  style={{ width: 48, height: 48, border: '2px solid var(--orange)', borderRadius: '50%' }}
                 />
                 <div>
-                  <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{p.name}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{p.handle}</div>
+                  <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontFamily: fonts.body }}>{p.name}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: fontSize('sm'), fontFamily: fonts.body }}>{p.handle}</div>
                 </div>
               </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 12 }}>{p.bio}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: fontSize('base'), marginBottom: spacing.sm, fontFamily: fonts.body, lineHeight: lineHeight.normal }}>{p.bio}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md }}>
                 {p.tags.map((t) => (
-                  <span key={t} style={{ fontSize: 11, border: '1px solid var(--pink)', color: 'var(--pink)', padding: '2px 8px' }}>{t}</span>
+                  <span key={t} style={{ fontSize: fontSize('xs'), fontFamily: fonts.mono, border: '1px solid var(--pink)', color: 'var(--pink)', padding: '2px 8px', borderRadius: '4px' }}>{t}</span>
                 ))}
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.xs }}>
                 {p.links.map((l) => (
-                  <span key={l} style={{ fontSize: 11, border: '1px solid var(--blue)', color: 'var(--blue)', padding: '2px 8px' }}>{l}</span>
+                  <span key={l} style={{ fontSize: fontSize('xs'), fontFamily: fonts.mono, border: '1px solid var(--blue)', color: 'var(--blue)', padding: '2px 8px', borderRadius: '4px' }}>{l}</span>
                 ))}
               </div>
             </div>
@@ -187,21 +190,23 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ===== FINAL CTA ===== */}
-      <section className="px-6 py-14" style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
-        <h2 className="pixel-font" style={{ fontSize: 20, color: 'var(--text-primary)', marginBottom: 18, lineHeight: 1.6 }}>
+      <section className="px-6 py-14" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto', textAlign: 'center' }}>
+        <h2 className="pixel-font" style={{ fontFamily: fonts.pixel, fontSize: '24px', color: 'var(--text-primary)', marginBottom: spacing.lg, lineHeight: lineHeight.tight }}>
           พร้อมสร้างบ้าน<br />ของคนไทยแล้ว?
         </h2>
         <div className="flex flex-wrap gap-4 justify-center">
-          <button onClick={() => navigate('/login')} className="pixel-btn">
-            <Sparkles className="w-4 h-4" /> เริ่มสร้างฟรี
-          </button>
-          <Link to="/vote" className="pixel-btn alt">
-            ดูชุมชน <ArrowRight className="w-4 h-4" />
+          <Button variant="primary" size="lg" leftIcon={<Sparkles size={16} />} onClick={() => navigate('/login')}>
+            เริ่มสร้างฟรี
+          </Button>
+          <Link to="/vote">
+            <Button variant="outline" size="lg" rightIcon={<ArrowRight size={16} />}>
+              ดูชุมชน
+            </Button>
           </Link>
         </div>
       </section>
 
-      <footer style={{ maxWidth: 1100, margin: '0 auto', padding: '30px 24px 70px', borderTop: '2px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: 13 }}>
+      <footer style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto', padding: '30px 24px 70px', borderTop: '2px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: fontSize('sm'), fontFamily: fonts.body }}>
         © 2026 Zeelink Thailand — แพลตฟอร์มพอร์ตโฟลิโอสำหรับคนไทย
       </footer>
     </div>

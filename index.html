@@ -43,10 +43,44 @@
     <style>
       /* ===== Zeelink — Claude orange / comfortable tokens ===== */
       :root{
+        /* ===== Brand roles (5 roles ตาม Blueprint) ===== */
+        --paper: #FBF7F0;          /* Paper: พื้นอุ่น (light) */
+        --ink: #1F1B16;            /* Ink: ตัวอักษรหลัก */
+        --blueprint: #2f4763;       /* Blueprint: accent/navy สำหรับ eyebrow + focus */
+        --blueprint-soft: #2f47631a; /* Blueprint soft: hover/selection */
+        --redline: #A93F3F;        /* Redline: ตัด/เตือน */
+        --highlight: #E8B23D;       /* Highlight: เน้นสำคัญ */
+        --highlight-soft: #E8B23D1a;
+
+        /* ===== Brand colors ===== */
         --orange:#FF7A2F; --orange-deep:#E8651E; --orange-soft:#FF7A2F26;
         --blue:#3D7DD6; --yellow:#E8B23D; --pink:#E36B9B; --green:#4F9D69;
-        --mono:'IBM Plex Mono', ui-monospace, monospace;
+
+        /* ===== Typography ===== */
+        --font-display:'IBM Plex Sans Thai', sans-serif;
+        --font-body:'IBM Plex Sans Thai', sans-serif;
+        --font-mono:'IBM Plex Mono', ui-monospace, monospace;
+        --font-pixel:'Press Start 2P', monospace;
         --thai:'IBM Plex Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+
+        /* Type scale (12/14/16/20/24/32/48) */
+        --fs-xs:12px; --fs-sm:14px; --fs-base:16px; --fs-lg:20px;
+        --fs-xl:24px; --fs-xxl:32px; --fs-xxxl:48px;
+        --lh-tight:1.15; --lh-normal:1.5; --lh-relaxed:1.6;
+
+        /* ===== Spacing scale (4px baseline) ===== */
+        --sp-xs:4px; --sp-sm:8px; --sp-md:12px; --sp-lg:16px;
+        --sp-xl:24px; --sp-xxl:32px; --sp-xxxl:48px; --sp-xxxxl:64px;
+
+        /* ===== Radius / Elevation ===== */
+        --radius-sm:6px; --radius-md:10px; --radius-lg:14px; --radius-xl:20px;
+        --shadow-sm:0 1px 4px rgba(31,27,22,0.08);
+        --shadow-md:0 2px 14px rgba(31,27,22,0.12);
+        --shadow-lg:0 8px 32px rgba(31,27,22,0.18);
+
+        /* ===== Motion ===== */
+        --motion-fast:0.15s ease; --motion-base:0.25s ease; --motion-slow:0.4s ease;
+
         --maxw: 1100px;
       }
 

@@ -4,6 +4,7 @@ import { Trash2, Ban, ShieldCheck, Download, Users, Edit3, Settings, Database, L
 import { Navigate } from 'react-router-dom';
 import { THAI_REGIONS } from '../constants';
 import { GlassBackground } from '../components/GlassBackground';
+import { Button } from '../components/ui/Button';
 import { SystemPopup } from '../types';
 
 export const AdminPanel: React.FC = () => {
@@ -80,7 +81,7 @@ export const AdminPanel: React.FC = () => {
                                 <input value={popupImage} onChange={e => setPopupImage(e.target.value)} placeholder="URL รูปภาพ" className="p-2 rounded-lg" />
                                 <input value={popupLink} onChange={e => setPopupLink(e.target.value)} placeholder="ลิงก์ปลายทาง" className="p-2 rounded-lg" />
                             </div>
-                            <button onClick={handleCreatePopup} className="mt-4 px-6 py-2 bg-[var(--pink)] text-white font-bold rounded-lg hover:opacity-85 shadow-lg">สร้าง Popup</button>
+                            <div className="mt-4"><Button variant="primary" onClick={handleCreatePopup} style={{ background: 'var(--pink)' }}>สร้าง Popup</Button></div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -106,7 +107,7 @@ export const AdminPanel: React.FC = () => {
                         <LinkIcon size={48} className="mx-auto text-orange-500 mb-4" />
                         <h3 className="text-xl font-bold">Link Tools</h3>
                         <p className="opacity-60 mb-6">เครื่องมือสำหรับตรวจสอบลิงก์เสียและรีเฟรชข้อมูลโปรไฟล์</p>
-                        <button className="px-6 py-3 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 shadow-lg">Scan Broken Links</button>
+                        <div><Button variant="primary" style={{ background: 'var(--orange)' }}>Scan Broken Links</Button></div>
                     </div>
                 )}
 
@@ -114,7 +115,7 @@ export const AdminPanel: React.FC = () => {
                     <div className="glass-card p-8 text-center border-green">
                         <Database size={48} className="mx-auto text-green-500 mb-4" />
                         <h3 className="text-xl font-bold">System Backup</h3>
-                        <button onClick={backupData} className="mt-6 px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 flex items-center justify-center mx-auto shadow-lg"><Download size={20} className="mr-2"/> Download Full Backup (.JSON)</button>
+                        <div className="mt-6 flex justify-center"><Button variant="primary" size="lg" leftIcon={<Download size={20} />} onClick={backupData} style={{ background: 'var(--green)' }}>Download Full Backup (.JSON)</Button></div>
                     </div>
                 )}
             </div>

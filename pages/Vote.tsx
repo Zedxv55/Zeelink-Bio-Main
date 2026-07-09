@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ThumbsUp, Send, Search, MessageSquare, Award, Heart, User } from 'lucide-react';
 import { GlassBackground } from '../components/GlassBackground';
+import { Button } from '../components/ui/Button';
 
 export const Vote: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export const Vote: React.FC = () => {
                   <textarea value={newText} onChange={(e) => setNewText(e.target.value)} maxLength={300} placeholder="คุณกำลังคิดอะไรอยู่?" className="w-full p-4 rounded-xl outline-none focus:ring-1 focus:ring-green-500 resize-none h-32" />
                   <div className="flex justify-between items-center">
                     <span className="text-xs opacity-60">{newText.length}/300</span>
-                    <button type="submit" disabled={!newText.trim()} className="px-6 py-2 bg-green-500 text-white font-bold text-xs hover:bg-green-600 transition-all flex items-center rounded-lg shadow-lg">ส่ง <Send size={14} className="ml-2" /></button>
+                    <Button type="submit" variant="primary" size="sm" disabled={!newText.trim()} rightIcon={<Send size={14} />}>ส่ง</Button>
                   </div>
                </form>
             </div>

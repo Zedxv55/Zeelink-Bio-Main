@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Profile as ProfileType } from '../types';
 import { MapPin, Heart, Eye, Calendar, Map as MapIcon } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { fonts, fontSize, palette } from '../lib/designTokens';
 
 export const ProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>();
@@ -16,8 +18,8 @@ export const ProfilePage: React.FC = () => {
     setLoading(false);
   }, [username, usersList]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center text-gray-400">Loading Zeelink...</div>;
-  if (!profile) return <div className="h-screen flex items-center justify-center">Profile not found</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)', color: 'var(--text-muted)', fontFamily: fonts.body, fontSize: fontSize('base') }}>Loading Zeelink...</div>;
+  if (!profile) return <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: fonts.body, fontSize: fontSize('lg') }}>Profile not found</div>;
 
   const theme = profile.themeConfig;
 
