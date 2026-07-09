@@ -2,7 +2,7 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="https://brilliant-maroon-7qyv9qr1xg.edgeone.app/zl_icon_white_bg.png" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F1B16'/%3E%3Ctext x='16' y='23' font-family='Arial' font-weight='800' font-size='20' fill='%23FF7A2F' text-anchor='middle'%3EZ%3C/text%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zeelink — แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย</title>
 
@@ -22,59 +22,57 @@
      crossorigin=""></script>
 
     <style>
-      /* ===== Claude Notebook Design — tokens ===== */
+      /* ===== Zeelink — Claude orange / comfortable tokens ===== */
       :root{
-        --paper:#F5F2EA; --rule:#E1DACB; --ink:#22252A; --ink-soft:#5B5E64;
-        --blueprint:#3D5A80; --blueprint-soft:#3D5A801a;
-        --redline:#A93F3F; --highlight:#E3A72E; --highlight-soft:#E3A72E22;
-        --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        --orange:#FF7A2F; --orange-deep:#E8651E; --orange-soft:#FF7A2F26;
+        --blue:#3D7DD6; --yellow:#E8B23D; --pink:#E36B9B; --green:#4F9D69;
+        --mono:'IBM Plex Mono', ui-monospace, monospace;
         --thai:'IBM Plex Sans Thai', -apple-system, 'Segoe UI', sans-serif;
-        --maxw: 880px;
+        --maxw: 1100px;
       }
 
-      /* Light = กระดาษบันทึก */
+      /* Light = ครีมอุ่น + ส้ม (สบายตา) */
       :root[data-theme="light"]{
-        --bg-primary: var(--paper);
-        --bg-secondary: #FBF9F4;
-        --text-primary: var(--ink);
-        --text-secondary: #2b2e33;
-        --text-muted: var(--ink-soft);
-        --glass-bg: #ffffff;
-        --glass-border: var(--rule);
-        --glass-shadow: rgba(34,37,42,0.08);
-        --accent-cyan: var(--blueprint);
-        --accent-purple: var(--highlight);
-        --accent-pink: var(--redline);
-        --accent-green: #4F7A4F;
-        --accent-orange: var(--highlight);
-        --accent-yellow: var(--highlight);
-        --input-bg: #ffffff;
-        --input-border: var(--rule);
-        --input-text: var(--ink);
-        --rule-color: var(--rule);
+        --bg-primary: #FBF7F0;
+        --bg-secondary: #FFFFFF;
+        --text-primary: #1F1B16;
+        --text-secondary: #3a342c;
+        --text-muted: #7A7163;
+        --glass-bg: #FFFFFF;
+        --glass-border: #ECE3D6;
+        --glass-shadow: rgba(31,27,22,0.08);
+        --accent-cyan: var(--orange);
+        --accent-purple: var(--yellow);
+        --accent-pink: var(--pink);
+        --accent-green: var(--green);
+        --accent-orange: var(--orange);
+        --accent-yellow: var(--yellow);
+        --input-bg: #FFFFFF;
+        --input-border: #ECE3D6;
+        --input-text: #1F1B16;
+        --rule-color: #ECE3D6;
       }
 
-      /* Dark = สมุดบันทึกกระดาษดำ */
+      /* Dark = ดำอุ่น + ส้ม (สบายตา) */
       :root[data-theme="dark"]{
-        --paper:#1c1f24; --rule:#2c3138;
-        --bg-primary: #1c1f24;
-        --bg-secondary: #23272d;
-        --text-primary: #F5F2EA;
-        --text-secondary: #E4E1D8;
-        --text-muted: #A8ABB0;
-        --glass-bg: #23272d;
-        --glass-border: #2c3138;
-        --glass-shadow: rgba(0,0,0,0.45);
-        --accent-cyan: #7BA3C9;
-        --accent-purple: var(--highlight);
-        --accent-pink: #D98A8A;
-        --accent-green: #88B386;
-        --accent-orange: var(--highlight);
-        --accent-yellow: var(--highlight);
-        --input-bg: #23272d;
-        --input-border: #2c3138;
-        --input-text: #F5F2EA;
-        --rule-color: #2c3138;
+        --bg-primary: #161412;
+        --bg-secondary: #211E1A;
+        --text-primary: #F3EDE4;
+        --text-secondary: #E4DDD2;
+        --text-muted: #B0A697;
+        --glass-bg: #211E1A;
+        --glass-border: #322D27;
+        --glass-shadow: rgba(0,0,0,0.4);
+        --accent-cyan: var(--orange);
+        --accent-purple: var(--yellow);
+        --accent-pink: var(--pink);
+        --accent-green: #6FB98A;
+        --accent-orange: var(--orange);
+        --accent-yellow: var(--yellow);
+        --input-bg: #211E1A;
+        --input-border: #322D27;
+        --input-text: #F3EDE4;
+        --rule-color: #322D27;
       }
 
       html, body { margin:0; padding:0; }
@@ -218,80 +216,79 @@
       .nb-footer-line{ font-size:14.5px; color: var(--text-muted); margin:0 0 10px; }
       .nb-signoff{ font-family: var(--mono); font-size:12.5px; color: var(--blueprint); }
 
-      /* ===== Pixel / Retro landing (แยกจากธีมสมุดบันทึก) ===== */
+      /* ===== Zeelink landing — orange / comfortable (theme-aware) ===== */
       .pixel-landing{
-        position:relative; min-height:100vh; color:#ECEAF6;
+        position:relative; min-height:100vh; color:var(--text-primary);
         font-family:'IBM Plex Sans Thai', sans-serif; overflow:hidden;
         background:
-          radial-gradient(circle at 18% 12%, rgba(255,79,216,0.20), transparent 42%),
-          radial-gradient(circle at 82% 28%, rgba(0,229,255,0.18), transparent 44%),
-          linear-gradient(160deg, #161031 0%, #0c0a1f 55%, #1c0f30 100%);
+          radial-gradient(circle at 18% 12%, var(--orange-soft), transparent 42%),
+          radial-gradient(circle at 82% 28%, rgba(61,125,214,0.10), transparent 44%),
+          linear-gradient(160deg, var(--bg-secondary) 0%, var(--bg-primary) 60%, var(--bg-secondary) 100%);
       }
       .pixel-landing::before{
         content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
         background-image:
-          linear-gradient(rgba(124,92,200,0.10) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(124,92,200,0.10) 1px, transparent 1px);
-        background-size:42px 42px;
+          linear-gradient(var(--glass-border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+        background-size:42px 42px; opacity:0.6;
       }
       .pixel-landing::after{
         content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
-        background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.16) 0 2px, transparent 2px 4px);
-        mix-blend-mode:multiply;
+        background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.04) 0 2px, transparent 2px 4px);
       }
       .pixel-landing > *{ position:relative; z-index:2; }
 
       .pixel-font{ font-family:'Press Start 2P', monospace; }
       .pixel-h1{
         font-family:'Press Start 2P', monospace; font-size:clamp(26px,6vw,54px);
-        line-height:1.3; color:#fff;
-        text-shadow:0 0 14px rgba(0,229,255,0.55), 4px 4px 0 #ff4fd8;
+        line-height:1.3; color:var(--text-primary);
+        text-shadow:0 0 12px var(--orange-soft), 3px 3px 0 var(--orange);
       }
-      .pixel-tag{ font-family:'Press Start 2P', monospace; font-size:12px; color:#00e5ff; letter-spacing:.12em; }
-      .pixel-lede{ color:#c7c2e2; max-width:62ch; font-size:17px; line-height:1.7; }
+      .pixel-tag{ font-family:'Press Start 2P', monospace; font-size:12px; color:var(--orange); letter-spacing:.12em; }
+      .pixel-lede{ color:var(--text-muted); max-width:62ch; font-size:17px; line-height:1.7; }
 
       .pixel-btn{
         font-family:'Press Start 2P', monospace; font-size:12px; padding:15px 20px;
-        border:3px solid #00e5ff; background:#00e5ff; color:#0c0a1f; cursor:pointer;
-        box-shadow:4px 4px 0 #ff4fd8; transition:transform .12s ease, box-shadow .12s ease;
+        border:3px solid var(--orange); background:var(--orange); color:#fff; cursor:pointer;
+        box-shadow:4px 4px 0 var(--text-primary); transition:transform .12s ease, box-shadow .12s ease;
         text-decoration:none; display:inline-flex; align-items:center; gap:8px;
       }
-      .pixel-btn:hover{ transform:translate(-2px,-2px); box-shadow:7px 7px 0 #ff4fd8; }
-      .pixel-btn.alt{ background:transparent; color:#00e5ff; border-color:#ff4fd8; box-shadow:4px 4px 0 #00e5ff; }
-      .pixel-btn.alt:hover{ box-shadow:7px 7px 0 #00e5ff; }
+      .pixel-btn:hover{ transform:translate(-2px,-2px); box-shadow:7px 7px 0 var(--text-primary); }
+      .pixel-btn.alt{ background:transparent; color:var(--orange); border-color:var(--text-primary); box-shadow:4px 4px 0 var(--orange); }
+      .pixel-btn.alt:hover{ box-shadow:7px 7px 0 var(--orange); }
 
       .pixel-card{
-        border:3px solid rgba(0,229,255,0.45); background:rgba(22,16,49,0.72);
-        box-shadow:5px 5px 0 rgba(255,79,216,0.30); padding:22px; border-radius:0;
+        border:3px solid var(--orange); background:var(--glass-bg);
+        box-shadow:5px 5px 0 rgba(31,27,22,0.12); padding:22px; border-radius:0;
         transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
       }
-      .pixel-card:hover{ transform:translate(-3px,-3px); box-shadow:9px 9px 0 #ff4fd8; border-color:#00e5ff; }
+      .pixel-card:hover{ transform:translate(-3px,-3px); box-shadow:9px 9px 0 var(--orange); }
 
-      .pixel-card-cyan{ border-color:rgba(0,229,255,0.6); }
-      .pixel-card-magenta{ border-color:rgba(255,79,216,0.6); }
-      .pixel-card-green{ border-color:rgba(124,252,0,0.55); }
+      .pixel-card-cyan{ border-color:var(--blue); }
+      .pixel-card-magenta{ border-color:var(--pink); }
+      .pixel-card-green{ border-color:var(--green); }
 
       /* pixel map of thailand */
-      .pixel-map-wrap{ position:relative; display:inline-block; padding:10px; }
+      .pixel-map-wrap{ position:relative; display:inline-block; }
       .pixel-map{ display:grid; gap:3px; }
       .pixel-cell{ width:15px; height:15px; border-radius:2px; }
-      .pixel-cell.land{ background:linear-gradient(135deg,#00e5ff,#7a5cff); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15); }
+      .pixel-cell.land{ background:linear-gradient(135deg,var(--orange),#FFB066); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15); }
       .pixel-pin{
         position:absolute; width:13px; height:13px; border-radius:50%;
-        background:#ffe600; box-shadow:0 0 12px 4px #ffe600; animation:pinpulse 1.6s ease-in-out infinite;
+        background:var(--yellow); box-shadow:0 0 12px 4px var(--yellow); animation:pinpulse 1.6s ease-in-out infinite;
       }
       @keyframes pinpulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.7); opacity:.45; } }
 
       .float-deco{ position:absolute; z-index:1; font-size:30px; opacity:.85; animation:floaty 5s ease-in-out infinite; }
       @keyframes floaty{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-16px); } }
 
-      /* dark retro navbar (เข้ากับหน้าแรก) */
-      .pixel-nav{ background:rgba(12,10,31,0.92); border-bottom:2px solid #00e5ff; backdrop-filter:blur(6px); }
-      .pixel-link{ color:#ECEAF6; padding:8px 12px; border-radius:0; transition:color .15s, text-shadow .15s; }
-      .pixel-link:hover{ color:#00e5ff; text-shadow:0 0 8px #00e5ff; }
-      .pixel-cta{ font-family:'Press Start 2P', monospace; font-size:11px; padding:10px 14px; border:2px solid #00e5ff; background:#00e5ff; color:#0c0a1f; box-shadow:3px 3px 0 #ff4fd8; text-decoration:none; display:inline-flex; align-items:center; }
+      /* navbar (เข้ากับหน้าแรก) */
+      .pixel-nav{ background:var(--glass-bg); border-bottom:2px solid var(--orange); backdrop-filter:blur(6px); }
+      .pixel-link{ color:var(--text-primary); padding:8px 12px; border-radius:0; transition:color .15s, text-shadow .15s; }
+      .pixel-link:hover{ color:var(--orange); text-shadow:0 0 8px var(--orange-soft); }
+      .pixel-cta{ font-family:'Press Start 2P', monospace; font-size:11px; padding:10px 14px; border:2px solid var(--orange); background:var(--orange); color:#fff; box-shadow:3px 3px 0 var(--text-primary); text-decoration:none; display:inline-flex; align-items:center; }
       .pixel-cta:hover{ transform:translate(-1px,-1px); }
-      .pixel-cta-alt{ font-family:'Press Start 2P', monospace; font-size:11px; padding:9px 13px; border:2px solid #ff4fd8; background:transparent; color:#ff4fd8; text-decoration:none; display:inline-flex; align-items:center; }
+      .pixel-cta-alt{ font-family:'Press Start 2P', monospace; font-size:11px; padding:9px 13px; border:2px solid var(--text-primary); background:transparent; color:var(--text-primary); text-decoration:none; display:inline-flex; align-items:center; }
     </style>
 
     <!-- Tailwind CSS (layout utilities) -->

@@ -78,7 +78,7 @@ export const Landing: React.FC = () => {
           แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย — เชื่อมครีเอเตอร์และคนทั่วประเทศ
           ด้วยหน้าโปรไฟล์สวยๆ บนแผนที่ และชุมชนที่โหวตไปพร้อมกัน
         </p>
-        <p className="pixel-lede" style={{ marginBottom: 28, color: '#9be7ff' }}>
+        <p className="pixel-lede" style={{ marginBottom: 28, color: 'var(--orange)' }}>
           ครีเอเตอร์ไทย มาสร้างบ้านของตัวเองได้แล้ววันนี้
         </p>
 
@@ -120,7 +120,7 @@ export const Landing: React.FC = () => {
           </div>
           <div>
             <p className="pixel-tag" style={{ marginBottom: 14 }}>EXPLORE MAP</p>
-            <h2 className="pixel-font" style={{ fontSize: 18, color: '#fff', marginBottom: 14, lineHeight: 1.5 }}>
+            <h2 className="pixel-font" style={{ fontSize: 18, color: 'var(--text-primary)', marginBottom: 14, lineHeight: 1.5 }}>
               เจอคนไทย<br />บนแผนที่
             </h2>
             <p className="pixel-lede">
@@ -137,11 +137,11 @@ export const Landing: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {STEPS.map((s, i) => (
             <div key={i} className="pixel-card">
-              <div style={{ color: '#00e5ff', marginBottom: 12 }}>{s.icon}</div>
-              <h3 className="pixel-font" style={{ fontSize: 13, color: '#fff', marginBottom: 10, lineHeight: 1.5 }}>
+              <div style={{ color: 'var(--orange)', marginBottom: 12 }}>{s.icon}</div>
+              <h3 className="pixel-font" style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, lineHeight: 1.5 }}>
                 {`0${i + 1}`} {s.title}
               </h3>
-              <p style={{ color: '#c7c2e2', fontSize: 15 }}>{s.desc}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>{s.desc}</p>
             </div>
           ))}
         </div>
@@ -150,7 +150,7 @@ export const Landing: React.FC = () => {
       {/* ===== PROPOSED PORTFOLIO (พอร์ตที่เสนอ) ===== */}
       <section className="px-6 py-10" style={{ maxWidth: 1100, margin: '0 auto' }}>
         <p className="pixel-tag" style={{ marginBottom: 10 }}>YOUR PORTFOLIO</p>
-        <h2 className="pixel-font" style={{ fontSize: 18, color: '#fff', marginBottom: 8, lineHeight: 1.5 }}>
+        <h2 className="pixel-font" style={{ fontSize: 18, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.5 }}>
           นี่คือพอร์ตที่คุณจะได้
         </h2>
         <p className="pixel-lede" style={{ marginBottom: 22 }}>
@@ -163,22 +163,22 @@ export const Landing: React.FC = () => {
                 <img
                   src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random`}
                   alt={p.name}
-                  style={{ width: 48, height: 48, border: '2px solid #00e5ff' }}
+                  style={{ width: 48, height: 48, border: '2px solid var(--orange)' }}
                 />
                 <div>
-                  <div style={{ color: '#fff', fontWeight: 700 }}>{p.name}</div>
-                  <div style={{ color: '#9be7ff', fontSize: 13 }}>{p.handle}</div>
+                  <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{p.name}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{p.handle}</div>
                 </div>
               </div>
-              <p style={{ color: '#c7c2e2', fontSize: 14, marginBottom: 12 }}>{p.bio}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 12 }}>{p.bio}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                 {p.tags.map((t) => (
-                  <span key={t} style={{ fontSize: 11, border: '1px solid #ff4fd8', color: '#ff4fd8', padding: '2px 8px' }}>{t}</span>
+                  <span key={t} style={{ fontSize: 11, border: '1px solid var(--pink)', color: 'var(--pink)', padding: '2px 8px' }}>{t}</span>
                 ))}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {p.links.map((l) => (
-                  <span key={l} style={{ fontSize: 11, border: '1px solid #00e5ff', color: '#00e5ff', padding: '2px 8px' }}>{l}</span>
+                  <span key={l} style={{ fontSize: 11, border: '1px solid var(--blue)', color: 'var(--blue)', padding: '2px 8px' }}>{l}</span>
                 ))}
               </div>
             </div>
@@ -188,7 +188,7 @@ export const Landing: React.FC = () => {
 
       {/* ===== FINAL CTA ===== */}
       <section className="px-6 py-14" style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
-        <h2 className="pixel-font" style={{ fontSize: 20, color: '#fff', marginBottom: 18, lineHeight: 1.6 }}>
+        <h2 className="pixel-font" style={{ fontSize: 20, color: 'var(--text-primary)', marginBottom: 18, lineHeight: 1.6 }}>
           พร้อมสร้างบ้าน<br />ของคนไทยแล้ว?
         </h2>
         <div className="flex flex-wrap gap-4 justify-center">
@@ -201,7 +201,7 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
-      <footer style={{ maxWidth: 1100, margin: '0 auto', padding: '30px 24px 70px', borderTop: '2px solid rgba(0,229,255,0.25)', color: '#8f8ab0', fontSize: 13 }}>
+      <footer style={{ maxWidth: 1100, margin: '0 auto', padding: '30px 24px 70px', borderTop: '2px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: 13 }}>
         © 2026 Zeelink Thailand — แพลตฟอร์มพอร์ตโฟลิโอสำหรับคนไทย
       </footer>
     </div>
