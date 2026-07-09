@@ -14,7 +14,8 @@ interface AuthContextType {
 
   // Methods
   login: (email: string, password: string, remember?: boolean) => Promise<User | null>;
-  register: (email: string, password: string, name: string) => Promise<User | null>;
+  register: (email: string, password: string, name: string) => Promise<{ user: User | null; needsConfirmation?: boolean }>;
+  resetPassword: (email: string) => Promise<boolean>;
   logout: () => Promise<void>;
   updateProfile: (profile: Profile) => Promise<void>;
   toggleLike: (profileId: string) => Promise<void>;
@@ -181,10 +182,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
 
-      return await loadUserByEmail(email);
+      // ถ้ามสีอีเมลยืนยัน (Confirm email เปิด) → session จะเปล่า
+      if (!data.session) {
+        return { user: null, needsConfirmation: true };
+      }
+
+      const user = await loadUserByEmail(email);
+      return { user, needsConfirmation: false };
     } catch (error) {
       console.error('Register error:', error);
-      return null;
+      return { user: null };
     } finally {
       setIsLoading(false);
     }
@@ -195,6 +202,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setProfile(null);
     localStorage.removeItem('zeelink_remember');
+  };
+
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return false;
+    }
   };
 
   const updateProfile = async (newProfile: Profile) => {
@@ -502,7 +522,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user, profile, usersList, isLoading, activePopup, popups, questions,
-    login, register, logout, updateProfile, toggleLike, deleteUser, banUser,
+    login, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser,
     simulateUsers, backupData, createPopup, togglePopup, deletePopup,
     closeActivePopup, addQuestion, voteQuestion, askAiStylist
   };

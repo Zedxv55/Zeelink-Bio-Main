@@ -1,37 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../contexts/supabaseClient';
 import { ThaiBackground } from '../components/ThaiBackground';
 import { Lock, Mail, User } from 'lucide-react';
 
+type Mode = 'login' | 'register' | 'forgot' | 'setpw';
+
 export const Login: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [name, setName] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
-  const { login, register } = useAuth();
+  const [info, setInfo] = useState('');
+  const { login, register, resetPassword } = useAuth();
   const navigate = useNavigate();
+
+  // ถ้าเปิดหน้านี้มาจากลิงก์รีเซ็ตรหัสผ่าน (Supabase ส่ง session มาใน URL)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setMode('setpw');
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
 
-    if (isLogin) {
+    if (mode === 'forgot') {
+      const ok = await resetPassword(email);
+      if (ok) setInfo('✅ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว');
+      else setError('ไม่สามารถส่งลิงก์ได้ กรุณาตรวจสอบอีเมล');
+      return;
+    }
+
+    if (mode === 'setpw') {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) { setError('ตั้งรหัสผ่านไม่สำเร็จ ' + error.message); return; }
+      alert('✅ ตั้งรหัสผ่านใหม่สำเร็จแล้ว');
+      navigate('/dashboard');
+      return;
+    }
+
+    if (mode === 'login') {
       const user = await login(email, password, remember);
-      if (user) {
-        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
-      } else {
-        setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
-      }
+      if (user) navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+      else setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
     } else {
-      const user = await register(email, password, name);
-      if (user) {
+      const res = await register(email, password, name);
+      if (res.user && !res.needsConfirmation) {
         alert('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
-        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+        navigate(res.user.role === 'admin' ? '/admin' : '/dashboard');
+      } else if (res.needsConfirmation) {
+        setInfo('📧 กรุณายืนยันอีเมลในกล่องจดหมายของคุณ ก่อนเข้าใช้งาน');
       } else {
-        setError('ไม่สามารถสมัครได้ อาจเผื่ออีเมลซ้ำหรือรหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)');
+        setError('ไม่สามารถสมัครได้ อาจเนื่องจากอีเมลซ้ำหรือรหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)');
       }
     }
   };
@@ -44,10 +71,10 @@ export const Login: React.FC = () => {
         style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
       >
         <h2 className="text-3xl font-bold text-center mb-2" style={{ color: 'var(--text-primary)' }}>
-          {isLogin ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
+          {mode === 'forgot' ? 'ลืมรหัสผ่าน' : mode === 'setpw' ? 'ตั้งรหัสผ่านใหม่' : mode === 'register' ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}
         </h2>
         <p className="text-center mb-8" style={{ color: 'var(--text-muted)' }}>
-          {isLogin ? 'ยินดีต้อนรับกลับสู่ Zeelink' : 'สร้างบัญชีเพื่อเริ่มต้นใช้งาน'}
+          {mode === 'forgot' ? 'ใส่อีเมล เราจะส่งลิงก์รีเซ็ตให้' : mode === 'setpw' ? 'ตั้งรหัสผ่านใหม่สำหรับบัญชีนี้' : mode === 'register' ? 'สร้างบัญชีเพื่อเริ่มต้นใช้งาน' : 'ยินดีต้อนรับกลับสู่ Zeelink'}
         </p>
 
         {error && (
@@ -55,9 +82,14 @@ export const Login: React.FC = () => {
             {error}
           </div>
         )}
+        {info && (
+          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--glass-border)', color: 'var(--text-secondary)' }}>
+            {info}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {mode === 'register' && (
             <div className="relative">
               <User className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
               <input
@@ -67,48 +99,57 @@ export const Login: React.FC = () => {
                 onChange={(e) => setName(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
-                required={!isLogin}
+                required={mode === 'register'}
               />
             </div>
           )}
-          <div className="relative">
-            <Mail className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
-            <input
-              type="email"
-              placeholder="อีเมล"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
-              style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
-              required
-            />
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
-            <input
-              type="password"
-              placeholder="รหัสผ่าน"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
-              style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
-              required
-            />
-          </div>
 
-          {isLogin && (
-            <div className="flex items-center">
+          {mode !== 'setpw' && (
+            <div className="relative">
+              <Mail className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
               <input
-                type="checkbox"
-                id="remember"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="w-4 h-4 rounded"
-                style={{ accentColor: 'var(--orange)' }}
+                type="email"
+                placeholder="อีเมล"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
+                required
               />
-              <label htmlFor="remember" className="ml-2 block text-sm" style={{ color: 'var(--text-muted)' }}>
+            </div>
+          )}
+
+          {mode !== 'forgot' && (
+            <div className="relative">
+              <Lock className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
+              <input
+                type={mode === 'setpw' ? 'password' : 'password'}
+                placeholder={mode === 'setpw' ? 'รหัสผ่านใหม่' : 'รหัสผ่าน'}
+                value={mode === 'setpw' ? newPassword : password}
+                onChange={(e) => mode === 'setpw' ? setNewPassword(e.target.value) : setPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
+                required
+              />
+            </div>
+          )}
+
+          {mode === 'login' && (
+            <div className="flex items-center justify-between">
+              <label className="flex items-center text-sm" style={{ color: 'var(--text-muted)' }}>
+                <input
+                  type="checkbox"
+                  id="remember"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-4 h-4 rounded mr-2"
+                  style={{ accentColor: 'var(--orange)' }}
+                />
                 จำฉันไว้
               </label>
+              <button type="button" onClick={() => { setMode('forgot'); setError(''); setInfo(''); }} className="text-sm hover:underline font-bold" style={{ color: 'var(--orange)' }}>
+                ลืมรหัสผ่าน?
+              </button>
             </div>
           )}
 
@@ -117,18 +158,31 @@ export const Login: React.FC = () => {
             className="w-full py-3 rounded-lg font-bold transition-colors"
             style={{ background: 'var(--orange)', color: '#fff' }}
           >
-            {isLogin ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
+            {mode === 'forgot' ? 'ส่งลิงก์รีเซ็ต' : mode === 'setpw' ? 'ตั้งรหัสผ่านใหม่' : mode === 'login' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="hover:underline font-bold"
-            style={{ color: 'var(--orange)' }}
-          >
-            {isLogin ? 'ยังไม่มีบัญชี? สมัครสมาชิก' : 'มีบัญชีแล้ว? เข้าสู่ระบบ'}
-          </button>
+          {mode === 'login' && (
+            <button onClick={() => setMode('register')} className="hover:underline font-bold" style={{ color: 'var(--orange)' }}>
+              ยังไม่มีบัญชี? สมัครสมาชิก
+            </button>
+          )}
+          {mode === 'register' && (
+            <button onClick={() => setMode('login')} className="hover:underline font-bold" style={{ color: 'var(--orange)' }}>
+              มีบัญชีแล้ว? เข้าสู่ระบบ
+            </button>
+          )}
+          {mode === 'forgot' && (
+            <button onClick={() => setMode('login')} className="hover:underline font-bold" style={{ color: 'var(--orange)' }}>
+              กลับไปเข้าสู่ระบบ
+            </button>
+          )}
+          {mode === 'setpw' && (
+            <button onClick={() => setMode('login')} className="hover:underline font-bold" style={{ color: 'var(--orange)' }}>
+              กลับไปเข้าสู่ระบบ
+            </button>
+          )}
         </div>
       </div>
     </div>
