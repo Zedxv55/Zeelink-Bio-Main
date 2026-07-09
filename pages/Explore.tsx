@@ -222,15 +222,17 @@ export const Explore: React.FC = () => {
     <div className="h-screen pt-16 flex flex-col md:flex-row overflow-hidden relative">
       {showIntro && <IntroOverlay onComplete={() => setShowIntro(false)} />}
       
+      {/* Always-visible sidebar toggle (works on mobile too) */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed top-20 left-2 z-40 w-8 h-16 bg-white dark:bg-gray-800 border rounded-r-xl flex items-center justify-center shadow-md"
+      >
+        {sidebarOpen ? <ChevronLeft size={20} className="text-gray-500"/> : <ChevronRight size={20} className="text-gray-500"/>}
+      </button>
+
       {/* Sidebar List (Smart Glass Sidebar) */}
-      <div className={`glass-card fixed left-2 top-20 bottom-2 z-30 w-80 transition-transform duration-300 flex flex-col border-[var(--orange)] ${sidebarOpen ? 'translate-x-0' : '-translate-x-[110%]'}`}>
-        {/* Toggle Button */}
-        <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute -right-8 top-1/2 -translate-y-1/2 w-8 h-16 bg-white dark:bg-gray-800 border rounded-r-xl flex items-center justify-center shadow-md"
-        >
-            {sidebarOpen ? <ChevronLeft size={20} className="text-gray-500"/> : <ChevronRight size={20} className="text-gray-500"/>}
-        </button>
+      <div className={`glass-card fixed left-2 top-20 bottom-2 z-30 w-[85vw] max-w-sm md:w-80 transition-transform duration-300 flex flex-col border-[var(--orange)] ${sidebarOpen ? 'translate-x-0' : '-translate-x-[110%]'}`}>
+        
 
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-center">
@@ -270,7 +272,7 @@ export const Explore: React.FC = () => {
         </div>
       </div>
 
-      <div className={`flex-1 relative bg-gray-900 transition-all duration-300 ${sidebarOpen ? 'ml-80' : 'ml-0'}`}>
+      <div className={`flex-1 relative bg-gray-900 transition-all duration-300 ${sidebarOpen ? 'md:ml-80' : 'ml-0'}`}>
          {/* Map Container */}
          <div ref={mapContainerRef} className="w-full h-full z-10" />
       </div>
