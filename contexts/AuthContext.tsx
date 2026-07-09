@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Profile, SystemPopup, Question, Role } from '../types'; // ← ต้อง import Role
+import { User, Profile, SystemPopup, Question, Role } from '../types';
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
-import { supabase } from './supabaseClient';  // ✅ ถูกต้อง เพราะอยู่ใน contexts/ เหมือนกัน
+import { supabase } from './supabaseClient';
 
 interface AuthContextType {
   user: User | null;
@@ -11,23 +11,23 @@ interface AuthContextType {
   activePopup: SystemPopup | null;
   popups: SystemPopup[];
   questions: Question[];
-  
+
   // Methods
-  login: (email: string, password: string, remember?: boolean) => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (profile: Profile) => void;
-  toggleLike: (profileId: string) => void;
-  deleteUser: (userId: string) => void;
-  banUser: (userId: string) => void;
+  login: (email: string, password: string, remember?: boolean) => Promise<User | null>;
+  register: (email: string, password: string, name: string) => Promise<User | null>;
+  logout: () => Promise<void>;
+  updateProfile: (profile: Profile) => Promise<void>;
+  toggleLike: (profileId: string) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
+  banUser: (userId: string) => Promise<void>;
   simulateUsers: () => void;
-  backupData: () => void;
-  createPopup: (popup: SystemPopup) => void;
-  togglePopup: (popupId: string) => void;
-  deletePopup: (popupId: string) => void;
+  backupData: () => Promise<void>;
+  createPopup: (popup: SystemPopup) => Promise<void>;
+  togglePopup: (popupId: string) => Promise<void>;
+  deletePopup: (popupId: string) => Promise<void>;
   closeActivePopup: () => void;
   addQuestion: (text: string) => Promise<Question>;
-  voteQuestion: (questionId: string) => void;
+  voteQuestion: (questionId: string) => Promise<void>;
   askAiStylist: () => any;
 }
 
@@ -45,6 +45,39 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// โหลด user + profile จากอีเมล (ใช้อีเมลเป็น key เพราะตรงกับ auth.users)
+const mapUser = (u: any): User => ({
+  id: u.id,
+  email: u.email,
+  name: u.name,
+  photoUrl: u.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.email)}&background=random`,
+  role: u.role as Role,
+  isBanned: u.is_banned
+});
+
+const mapProfile = (p: any): Profile => ({
+  id: p.id,
+  userId: p.user_id,
+  uid: p.uid || '',
+  username: p.username,
+  displayName: p.display_name,
+  photoUrl: p.photo_url,
+  bio: p.bio,
+  tags: p.tags || [],
+  region: p.region,
+  province: p.province,
+  district: p.district,
+  subDistrict: p.sub_district,
+  postalCode: p.postal_code,
+  showOnExplore: p.show_on_explore,
+  likes: p.likes || 0,
+  views: p.views || 0,
+  themeConfig: p.theme_config,
+  links: p.links || [],
+  createdAt: p.created_at,
+  updatedAt: p.updated_at
+});
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -54,150 +87,81 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [popups, setPopups] = useState<SystemPopup[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
 
-  // Mock login function (ยังใช้ mock อยู่ก่อน)
-  const login = async (email: string, password: string, remember = false): Promise<boolean> => {
+  // โหลด user+profile จากอีเมล (RLS อนุญาต authenticated อ่านแถวตัวเอง)
+  const loadUserByEmail = async (email: string): Promise<User | null> => {
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error || !userData) {
+      setUser(null);
+      setProfile(null);
+      return null;
+    }
+
+    const mapped = mapUser(userData);
+    setUser(mapped);
+
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userData.id)
+      .single();
+
+    if (profileData) setProfile(mapProfile(profileData));
+    return mapped;
+  };
+
+  // ===== Supabase Auth จริง =====
+  const login = async (email: string, password: string, remember = false): Promise<User | null> => {
     setIsLoading(true);
     try {
-      // ตรวจสอบใน Supabase ก่อน
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      // ถ้ายังไม่มี user ในระบบ ให้สร้าง mock (สำหรับ development)
-      if (userError || !userData) {
-        // Mock user data สำหรับ development
-        const mockUser: User = {
-          id: '1',
-          email,
-          name: email.split('@')[0],
-          photoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split('@')[0])}&background=random`,
-          role: email === 'zbcd1053@gmail.com' ? 'admin' : 'user',
-          isBanned: false
-        };
-        
-        setUser(mockUser);
-        
-        // Mock profile for admin
-        if (email === 'zbcd1053@gmail.com') {
-          const adminProfile: Profile = {
-            id: 'admin1',
-            userId: '1',
-            uid: 'ADMIN001',
-            username: 'admin',
-            displayName: 'Zeelink Admin',
-            photoUrl: 'https://picsum.photos/200',
-            bio: 'ผู้ดูแลระบบ Zeelink',
-            tags: ['admin', 'developer'],
-            region: 'ภาคกลาง',
-            province: 'กรุงเทพมหานคร',
-            district: 'ปทุมวัน',
-            subDistrict: 'ลุมพินี',
-            postalCode: '10330',
-            showOnExplore: true,
-            likes: 999,
-            views: 5000,
-            themeConfig: {
-              backgroundColor: '#0f172a',
-              textColor: '#ffffff',
-              buttonColor: '#3b82f6',
-              fontFamily: 'Prompt',
-              layout: 'modern',
-              enableGlassEffect: true
-            },
-            links: [
-              { id: '1', title: 'Admin Panel', url: '/admin', clicks: 0, isActive: true }
-            ],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          setProfile(adminProfile);
-        }
-      } else {
-        // มี user ใน Supabase แล้ว
-        setUser({
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          photoUrl: userData.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=random`,
-          role: userData.role as Role,
-          isBanned: userData.is_banned
-        });
-
-        // ดึง profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userData.id)
-          .single();
-
-        if (profileData) {
-          setProfile({
-            id: profileData.id,
-            userId: profileData.user_id,
-            uid: profileData.uid || '',
-            username: profileData.username,
-            displayName: profileData.display_name,
-            photoUrl: profileData.photo_url,
-            bio: profileData.bio,
-            tags: profileData.tags || [],
-            region: profileData.region,
-            province: profileData.province,
-            district: profileData.district,
-            subDistrict: profileData.sub_district,
-            postalCode: profileData.postal_code,
-            showOnExplore: profileData.show_on_explore,
-            likes: profileData.likes || 0,
-            views: profileData.views || 0,
-            themeConfig: profileData.theme_config,
-            links: profileData.links || [],
-            createdAt: profileData.created_at,
-            updatedAt: profileData.updated_at
-          });
-        }
-      }
-      
-      if (remember) {
-        localStorage.setItem('zeelink_user', JSON.stringify({
-          email,
-          name: email.split('@')[0]
-        }));
-      }
-      
-      return true;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (remember) localStorage.setItem('zeelink_remember', '1');
+      // onAuthStateChange + loadUserByEmail จะโหลด state
+      return await loadUserByEmail(email);
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+  const register = async (email: string, password: string, name: string): Promise<User | null> => {
     setIsLoading(true);
     try {
-      // สร้าง user ใน Supabase
-      const { data: userData, error: userError } = await supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name, full_name: name } }
+      });
+      if (error) throw error;
+
+      // อีเมลซ้ำ → Supabase คืน user โดยไม่มี identities
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        throw new Error('อีเมลนี้ถูกใช้งานแล้ว');
+      }
+
+      // รอให้ trigger/table sync เล็กน้อย แล้วสร้าง profile ถ้ายังไม่มี
+      const { data: userData } = await supabase
         .from('users')
-        .insert([
-          {
-            email,
-            name,
-            photo_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-            role: 'user'
-          }
-        ])
-        .select()
+        .select('*')
+        .eq('email', email)
         .single();
 
-      if (userError) throw userError;
+      if (userData) {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userData.id)
+          .maybeSingle();
 
-      // สร้าง profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
+        if (!existing) {
+          await supabase.from('profiles').insert([{
             user_id: userData.id,
             username: email.split('@')[0],
             display_name: name,
@@ -213,72 +177,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               enableGlassEffect: false
             },
             links: []
-          }
-        ])
-        .select()
-        .single();
+          }]);
+        }
+      }
 
-      if (profileError) throw profileError;
-
-      // อัพเดท state
-      setUser({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        photoUrl: userData.photo_url,
-        role: userData.role as Role,
-        isBanned: false
-      });
-
-      setProfile({
-        id: profileData.id,
-        userId: profileData.user_id,
-        uid: profileData.uid || '',
-        username: profileData.username,
-        displayName: profileData.display_name,
-        photoUrl: profileData.photo_url,
-        bio: profileData.bio,
-        tags: profileData.tags || [],
-        region: profileData.region,
-        province: profileData.province,
-        district: profileData.district,
-        subDistrict: profileData.sub_district,
-        postalCode: profileData.postal_code,
-        showOnExplore: profileData.show_on_explore,
-        likes: profileData.likes || 0,
-        views: profileData.views || 0,
-        themeConfig: profileData.theme_config,
-        links: profileData.links || [],
-        createdAt: profileData.created_at,
-        updatedAt: profileData.updated_at
-      });
-
-      localStorage.setItem('zeelink_user', JSON.stringify({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        photoUrl: userData.photo_url,
-        role: userData.role
-      }));
-
-      return true;
+      return await loadUserByEmail(email);
     } catch (error) {
       console.error('Register error:', error);
-      return false;
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
-    localStorage.removeItem('zeelink_user');
+    localStorage.removeItem('zeelink_remember');
   };
 
   const updateProfile = async (newProfile: Profile) => {
     try {
-      // บันทึกลง Supabase
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -300,8 +220,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
 
       if (error) throw error;
-
-      // อัพเดท state
       setProfile(newProfile);
       setUsersList(prev => {
         const index = prev.findIndex(p => p.id === newProfile.id);
@@ -319,7 +237,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const toggleLike = async (profileId: string) => {
     try {
-      // ดึงข้อมูลปัจจุบันจาก Supabase
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('likes')
@@ -328,7 +245,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (fetchError) throw fetchError;
 
-      // อัพเดท likes ใน Supabase
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ likes: (profile.likes || 0) + 1 })
@@ -336,14 +252,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (updateError) throw updateError;
 
-      // อัพเดท state
-      setUsersList(prev => prev.map(p => {
-        if (p.id === profileId) {
-          return { ...p, likes: (p.likes || 0) + 1 };
-        }
-        return p;
-      }));
-      
+      setUsersList(prev => prev.map(p =>
+        p.id === profileId ? { ...p, likes: (p.likes || 0) + 1 } : p
+      ));
+
       if (profile?.id === profileId) {
         setProfile(prev => prev ? { ...prev, likes: (prev.likes || 0) + 1 } : null);
       }
@@ -355,13 +267,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Admin functions
   const deleteUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-
+      const { error } = await supabase.from('users').delete().eq('id', userId);
       if (error) throw error;
-      
       setUsersList(prev => prev.filter(p => p.userId !== userId));
     } catch (error) {
       console.error('Delete user error:', error);
@@ -370,16 +277,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const banUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ is_banned: true })
-        .eq('id', userId);
-
+      const { error } = await supabase.from('users').update({ is_banned: true }).eq('id', userId);
       if (error) throw error;
-      
-      setUsersList(prev => prev.map(p => 
-        p.userId === userId ? { ...p, isBanned: true } : p
-      ));
+      setUsersList(prev => prev.map(p => p.userId === userId ? { ...p, isBanned: true } : p));
     } catch (error) {
       console.error('Ban user error:', error);
     }
@@ -388,69 +288,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const simulateUsers = () => {
     const mockUsers: Profile[] = [
       {
-        id: '2',
-        userId: '2',
-        uid: 'USER001',
-        username: 'somchai',
-        displayName: 'สมชาย ใจดี',
-        photoUrl: 'https://picsum.photos/201',
-        bio: 'โปรแกรมเมอร์ไทย 🇹🇭',
-        tags: ['developer', 'bangkok'],
-        region: 'ภาคกลาง',
-        province: 'กรุงเทพมหานคร',
-        district: 'จตุจักร',
-        subDistrict: 'ลาดยาว',
-        postalCode: '10900',
-        showOnExplore: true,
-        likes: 45,
-        views: 120,
-        themeConfig: {
-          backgroundColor: '#1e40af',
-          textColor: '#ffffff',
-          buttonColor: '#f59e0b',
-          fontFamily: 'Kanit',
-          layout: 'modern',
-          enableGlassEffect: false
-        },
-        links: [
-          { id: '1', title: 'GitHub', url: 'https://github.com', clicks: 0, isActive: true }
-        ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        id: '2', userId: '2', uid: 'USER001', username: 'somchai',
+        displayName: 'สมชาย ใจดี', photoUrl: 'https://picsum.photos/201',
+        bio: 'โปรแกรมเมอร์ไทย 🇹🇭', tags: ['developer', 'bangkok'],
+        region: 'ภาคกลาง', province: 'กรุงเทพมหานคร', district: 'จตุจักร',
+        subDistrict: 'ลาดยาว', postalCode: '10900', showOnExplore: true,
+        likes: 45, views: 120,
+        themeConfig: { backgroundColor: '#1e40af', textColor: '#ffffff', buttonColor: '#f59e0b', fontFamily: 'Kanit', layout: 'modern', enableGlassEffect: false },
+        links: [{ id: '1', title: 'GitHub', url: 'https://github.com', clicks: 0, isActive: true }],
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       },
     ];
-    
     setUsersList(prev => [...prev, ...mockUsers]);
   };
 
   const backupData = async () => {
     try {
-      const data = {
-        users: usersList,
-        questions,
-        popups,
-        timestamp: new Date().toISOString()
-      };
-      
-      // บันทึกลง Supabase Storage
+      const data = { users: usersList, questions, popups, timestamp: new Date().toISOString() };
       const { error } = await supabase.storage
         .from('backups')
         .upload(`backup-${Date.now()}.json`, JSON.stringify(data, null, 2));
-        
       if (error) throw error;
-      
       alert('✅ บันทึกข้อมูลสำเร็จใน Supabase Storage');
     } catch (error) {
       console.error('Backup error:', error);
-      
-      // Fallback: ดาวน์โหลดแบบเดิม
-      const data = {
-        users: usersList,
-        questions,
-        popups,
-        timestamp: new Date().toISOString()
-      };
-      
+      const data = { users: usersList, questions, popups, timestamp: new Date().toISOString() };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -461,31 +323,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const closeActivePopup = () => {
-    setActivePopup(null);
-  };
+  const closeActivePopup = () => setActivePopup(null);
 
   const createPopup = async (popup: SystemPopup) => {
     try {
-      const { data, error } = await supabase
-        .from('popups')
-        .insert([{
-          title: popup.title,
-          image_url: popup.imageUrl,
-          link_url: popup.linkUrl,
-          is_active: popup.isActive,
-          frequency: popup.frequency
-        }])
-        .select()
-        .single();
-
+      const { data, error } = await supabase.from('popups').insert([{
+        title: popup.title, image_url: popup.imageUrl, link_url: popup.linkUrl,
+        is_active: popup.isActive, frequency: popup.frequency
+      }]).select().single();
       if (error) throw error;
-
-      const newPopup = {
-        ...popup,
-        id: data.id
-      };
-
+      const newPopup = { ...popup, id: data.id };
       setPopups(prev => [...prev, newPopup]);
       setActivePopup(newPopup);
     } catch (error) {
@@ -495,20 +342,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const togglePopup = async (popupId: string) => {
     try {
-      // หา popup ปัจจุบัน
       const popup = popups.find(p => p.id === popupId);
       if (!popup) return;
-
-      const { error } = await supabase
-        .from('popups')
-        .update({ is_active: !popup.isActive })
-        .eq('id', popupId);
-
+      const { error } = await supabase.from('popups').update({ is_active: !popup.isActive }).eq('id', popupId);
       if (error) throw error;
-
-      setPopups(prev => prev.map(p => 
-        p.id === popupId ? { ...p, isActive: !p.isActive } : p
-      ));
+      setPopups(prev => prev.map(p => p.id === popupId ? { ...p, isActive: !p.isActive } : p));
     } catch (error) {
       console.error('Toggle popup error:', error);
     }
@@ -516,13 +354,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const deletePopup = async (popupId: string) => {
     try {
-      const { error } = await supabase
-        .from('popups')
-        .delete()
-        .eq('id', popupId);
-
+      const { error } = await supabase.from('popups').delete().eq('id', popupId);
       if (error) throw error;
-
       setPopups(prev => prev.filter(p => p.id !== popupId));
     } catch (error) {
       console.error('Delete popup error:', error);
@@ -531,56 +364,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const addQuestion = async (text: string): Promise<Question> => {
     try {
-      // Check for banned words
-      const hasBannedWord = BANNED_WORDS.some(word => 
-        text.toLowerCase().includes(word.toLowerCase())
-      );
-
+      const hasBannedWord = BANNED_WORDS.some(word => text.toLowerCase().includes(word.toLowerCase()));
       const newQuestion = {
         user_id: user?.id || 'anonymous',
         username: user?.name || 'anonymous',
-        text,
-        votes: 0,
-        voted_user_ids: [],
+        text, votes: 0, voted_user_ids: [],
         status: hasBannedWord ? 'rejected' : 'pending'
       };
-
-      const { data, error } = await supabase
-        .from('questions')
-        .insert([newQuestion])
-        .select()
-        .single();
-
+      const { data, error } = await supabase.from('questions').insert([newQuestion]).select().single();
       if (error) throw error;
-
       const question: Question = {
-        id: data.id,
-        userId: data.user_id,
-        username: data.username,
-        text: data.text,
-        votes: data.votes,
-        createdAt: data.created_at,
-        votedUserIds: data.voted_user_ids || [],
+        id: data.id, userId: data.user_id, username: data.username, text: data.text,
+        votes: data.votes, createdAt: data.created_at, votedUserIds: data.voted_user_ids || [],
         status: data.status as QuestionStatus
       };
-
       setQuestions(prev => [...prev, question]);
       return question;
     } catch (error) {
       console.error('Add question error:', error);
-      
-      // Fallback: ใช้ mock data
       const newQuestion: Question = {
-        id: Date.now().toString(),
-        userId: user?.id || 'anonymous',
-        username: user?.name || 'anonymous',
-        text,
-        votes: 0,
-        createdAt: new Date().toISOString(),
-        votedUserIds: [],
+        id: Date.now().toString(), userId: user?.id || 'anonymous', username: user?.name || 'anonymous',
+        text, votes: 0, createdAt: new Date().toISOString(), votedUserIds: [],
         status: hasBannedWord ? 'rejected' : 'approved'
       };
-      
       setQuestions(prev => [...prev, newQuestion]);
       return newQuestion;
     }
@@ -588,58 +394,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const voteQuestion = async (questionId: string) => {
     if (!user) return;
-
     try {
-      // ดึงข้อมูลปัจจุบันจาก Supabase
       const { data: question, error: fetchError } = await supabase
-        .from('questions')
-        .select('votes, voted_user_ids')
-        .eq('id', questionId)
-        .single();
-
+        .from('questions').select('votes, voted_user_ids').eq('id', questionId).single();
       if (fetchError) throw fetchError;
-
       const votedUserIds = question.voted_user_ids || [];
-      
-      // ตรวจสอบว่าเคยโหวตแล้วหรือยัง
       if (votedUserIds.includes(user.id)) return;
-
-      // อัพเดทใน Supabase
-      const { error: updateError } = await supabase
-        .from('questions')
-        .update({
-          votes: (question.votes || 0) + 1,
-          voted_user_ids: [...votedUserIds, user.id]
-        })
-        .eq('id', questionId);
-
+      const { error: updateError } = await supabase.from('questions').update({
+        votes: (question.votes || 0) + 1,
+        voted_user_ids: [...votedUserIds, user.id]
+      }).eq('id', questionId);
       if (updateError) throw updateError;
-
-      // อัพเดท state
-      setQuestions(prev => prev.map(q => {
-        if (q.id === questionId && !q.votedUserIds.includes(user.id)) {
-          return {
-            ...q,
-            votes: q.votes + 1,
-            votedUserIds: [...q.votedUserIds, user.id]
-          };
-        }
-        return q;
-      }));
+      setQuestions(prev => prev.map(q =>
+        q.id === questionId && !q.votedUserIds.includes(user.id)
+          ? { ...q, votes: q.votes + 1, votedUserIds: [...q.votedUserIds, user.id] }
+          : q
+      ));
     } catch (error) {
       console.error('Vote question error:', error);
-      
-      // Fallback: อัพเดท state เท่านั้น
-      setQuestions(prev => prev.map(q => {
-        if (q.id === questionId && !q.votedUserIds.includes(user.id)) {
-          return {
-            ...q,
-            votes: q.votes + 1,
-            votedUserIds: [...q.votedUserIds, user.id]
-          };
-        }
-        return q;
-      }));
+      setQuestions(prev => prev.map(q =>
+        q.id === questionId && !q.votedUserIds.includes(user.id)
+          ? { ...q, votes: q.votes + 1, votedUserIds: [...q.votedUserIds, user.id] }
+          : q
+      ));
     }
   };
 
@@ -649,203 +426,85 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       { backgroundColor: '#f8fafc', textColor: '#334155', buttonColor: '#000000', fontFamily: 'Prompt', layout: 'minimal' as const, enableGlassEffect: false },
       { backgroundColor: '#fff1f2', textColor: '#881337', buttonColor: '#fda4af', fontFamily: 'Mitr', layout: 'creative' as const, enableGlassEffect: true },
     ];
-    
     return presets[Math.floor(Math.random() * presets.length)];
   };
 
-  // Initialize with data from Supabase
+  // Initialize: sync auth session + load public data
   useEffect(() => {
     const initializeData = async () => {
       setIsLoading(true);
-      
       try {
-        // 1. Check remembered user
-        const savedUser = localStorage.getItem('zeelink_user');
-        if (savedUser) {
-          try {
-            const parsedUser = JSON.parse(savedUser);
+        // 1. โหลด session ปัจจุบัน (จำรหัสผ่าน)
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser?.email) await loadUserByEmail(authUser.email);
 
-            // ดึงข้อมูลจาก Supabase
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('email', parsedUser.email)
-              .single();
-              
-            if (!userError && userData) {
-              setUser({
-                id: userData.id,
-                email: userData.email,
-                name: userData.name,
-                photoUrl: userData.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=random`,
-                role: userData.role as Role,
-                isBanned: userData.is_banned
-              });
-              
-              // ดึง profile
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', userData.id)
-                .single();
-                
-              if (profileData) {
-                setProfile({
-                  id: profileData.id,
-                  userId: profileData.user_id,
-                  uid: profileData.uid || '',
-                  username: profileData.username,
-                  displayName: profileData.display_name,
-                  photoUrl: profileData.photo_url,
-                  bio: profileData.bio,
-                  tags: profileData.tags || [],
-                  region: profileData.region,
-                  province: profileData.province,
-                  district: profileData.district,
-                  subDistrict: profileData.sub_district,
-                  postalCode: profileData.postal_code,
-                  showOnExplore: profileData.show_on_explore,
-                  likes: profileData.likes || 0,
-                  views: profileData.views || 0,
-                  themeConfig: profileData.theme_config,
-                  links: profileData.links || [],
-                  createdAt: profileData.created_at,
-                  updatedAt: profileData.updated_at
-                });
-              }
-            }
-          } catch (e) {
-            console.error('Error parsing saved user:', e);
-          }
-        }
-        
-        // 2. Load users list
+        // 2. Users list (anon อ่านได้)
         const { data: usersData, error: usersError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('show_on_explore', true);
-          
+          .from('profiles').select('*').eq('show_on_explore', true);
         if (!usersError && usersData) {
-          const profiles = usersData.map(p => ({
-            id: p.id,
-            userId: p.user_id,
-            uid: p.uid || '',
-            username: p.username,
-            displayName: p.display_name,
-            photoUrl: p.photo_url,
-            bio: p.bio,
-            tags: p.tags || [],
-            region: p.region,
-            province: p.province,
-            district: p.district,
-            subDistrict: p.sub_district,
-            postalCode: p.postal_code,
-            showOnExplore: p.show_on_explore,
-            likes: p.likes || 0,
-            views: p.views || 0,
-            themeConfig: p.theme_config,
-            links: p.links || [],
-            createdAt: p.created_at,
-            updatedAt: p.updated_at
-          }));
-          setUsersList(profiles);
+          setUsersList(usersData.map(mapProfile));
         }
-        
-        // 3. Load questions
+
+        // 3. Questions
         const { data: questionsData, error: questionsError } = await supabase
-          .from('questions')
-          .select('*')
-          .eq('status', 'approved')
-          .order('votes', { ascending: false });
-          
+          .from('questions').select('*').eq('status', 'approved').order('votes', { ascending: false });
         if (!questionsError && questionsData) {
-          const questions = questionsData.map(q => ({
-            id: q.id,
-            userId: q.user_id,
-            username: q.username,
-            text: q.text,
-            votes: q.votes,
-            createdAt: q.created_at,
-            votedUserIds: q.voted_user_ids || [],
+          setQuestions(questionsData.map(q => ({
+            id: q.id, userId: q.user_id, username: q.username, text: q.text,
+            votes: q.votes, createdAt: q.created_at, votedUserIds: q.voted_user_ids || [],
             status: q.status as QuestionStatus
-          }));
-          setQuestions(questions);
+          })));
         } else {
-          // Fallback to initial questions
           setQuestions(INITIAL_QUESTIONS);
         }
-        
-        // 4. Load popups
+
+        // 4. Popups
         const { data: popupsData, error: popupsError } = await supabase
-          .from('popups')
-          .select('*')
-          .eq('is_active', true);
-          
+          .from('popups').select('*').eq('is_active', true);
         if (!popupsError && popupsData) {
-          const popups = popupsData.map(p => ({
-            id: p.id,
-            title: p.title,
-            imageUrl: p.image_url,
-            linkUrl: p.link_url,
-            isActive: p.is_active,
-            frequency: p.frequency as any
+          const mapped = popupsData.map(p => ({
+            id: p.id, title: p.title, imageUrl: p.image_url, linkUrl: p.link_url,
+            isActive: p.is_active, frequency: p.frequency as any
           }));
-          setPopups(popups);
-          if (popups.length > 0) setActivePopup(popups[0]);
+          setPopups(mapped);
+          if (mapped.length > 0) setActivePopup(mapped[0]);
         } else {
-          // Fallback: Create initial popup
           const initialPopup: SystemPopup = {
-            id: '1',
-            title: '🎉 ยินดีต้อนรับสู่ Zeelink!',
-            imageUrl: 'https://brilliant-maroon-7qyv9qr1xg.edgeone.app/zl_icon_white_bg.png',
-            linkUrl: '/explore',
-            isActive: true,
-            frequency: 'once_daily'
+            id: '1', title: '🎉 ยินดีต้อนรับสู่ Zeelink!',
+            imageUrl: '', linkUrl: '/explore', isActive: true, frequency: 'once_daily'
           };
-          
           setActivePopup(initialPopup);
           setPopups([initialPopup]);
         }
-        
-        // 5. Add some mock users if database is empty
-        if (usersList.length === 0) {
-          simulateUsers();
-        }
-        
+
+        if (usersList.length === 0) simulateUsers();
       } catch (error) {
         console.error('Initialization error:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     initializeData();
-  }, []); // ← ต้องมี dependency array ว่าง
+
+    // ซิงค์ state เมื่อ login/logout ระหว่างใช้งาน
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user?.email) {
+        await loadUserByEmail(session.user.email);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const value: AuthContextType = {
-    user,
-    profile,
-    usersList,
-    isLoading,
-    activePopup,
-    popups,
-    questions,
-    login,
-    register,
-    logout,
-    updateProfile,
-    toggleLike,
-    deleteUser,
-    banUser,
-    simulateUsers,
-    backupData,
-    createPopup,
-    togglePopup,
-    deletePopup,
-    closeActivePopup,
-    addQuestion,
-    voteQuestion,
-    askAiStylist
+    user, profile, usersList, isLoading, activePopup, popups, questions,
+    login, register, logout, updateProfile, toggleLike, deleteUser, banUser,
+    simulateUsers, backupData, createPopup, togglePopup, deletePopup,
+    closeActivePopup, addQuestion, voteQuestion, askAiStylist
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -205,22 +205,22 @@ export const Dashboard: React.FC = () => {
           
           <div className="flex-1 space-y-6">
               <div className="glass-card p-2 flex space-x-2">
-                  <button onClick={() => setActiveTab('profile')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-white/10'}`}> <User size={18} className="inline mr-2" /> ข้อมูลทั่วไป </button>
-                  <button onClick={() => setActiveTab('design')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'design' ? 'bg-purple-600 text-white shadow-lg' : 'hover:bg-white/10'}`}> <Palette size={18} className="inline mr-2" /> ตกแต่ง & ลิงก์ </button>
+                  <button onClick={() => setActiveTab('profile')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-[var(--orange)] text-white shadow-lg' : 'hover:bg-white/10'}`}> <User size={18} className="inline mr-2" /> ข้อมูลทั่วไป </button>
+                  <button onClick={() => setActiveTab('design')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'design' ? 'bg-[var(--pink)] text-white shadow-lg' : 'hover:bg-white/10'}`}> <Palette size={18} className="inline mr-2" /> ตกแต่ง & ลิงก์ </button>
               </div>
 
               {activeTab === 'profile' && (
                   <div className="space-y-6 animate-fade-in">
-                      <div className="glass-card p-6 border-cyan">
+                      <div className="glass-card p-6 border-[var(--orange)]">
                           <h3 className="font-bold mb-4">รูปโปรไฟล์ (จำเป็น)</h3>
                           <div className="flex items-center space-x-4">
                               <img src={photoUrl || 'https://picsum.photos/200'} className="w-20 h-20 rounded-full object-cover border-2 border-white" />
-                              <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-bold"><Camera size={16} className="inline mr-2"/> อัปโหลด</button>
+                              <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[var(--orange)] text-white rounded-lg text-sm hover:bg-[var(--orange-deep)] font-bold"><Camera size={16} className="inline mr-2"/> อัปโหลด</button>
                               <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
                           </div>
                       </div>
 
-                      <div className="glass-card p-6 space-y-4 border-cyan">
+                      <div className="glass-card p-6 space-y-4 border-[var(--orange)]">
                           <input value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full p-3 rounded-xl" placeholder="ชื่อที่แสดง" />
                           <div className="flex items-center gap-2">
                               <span className="p-3 rounded-xl bg-gray-500/20 text-sm whitespace-nowrap">zeelink.site/</span>
@@ -251,17 +251,17 @@ export const Dashboard: React.FC = () => {
 
               {activeTab === 'design' && (
                   <div className="space-y-6 animate-fade-in">
-                      <div className="glass-card p-6 flex justify-between items-center border-purple" style={{ background: 'linear-gradient(135deg, rgba(187, 134, 252, 0.2) 0%, rgba(187, 134, 252, 0.05) 100%)' }}>
+                      <div className="glass-card p-6 flex justify-between items-center border-[var(--pink)]" style={{ background: 'linear-gradient(135deg, rgba(227, 107, 155, 0.2) 0%, rgba(227, 107, 155, 0.05) 100%)' }}>
                           <div>
                               <h3 className="font-bold text-lg">ให้ AI ช่วยเลือกไหม?</h3>
                               <p className="text-xs opacity-90">น้องซีจะสุ่มธีมสวยๆ ให้คุณเอง</p>
                           </div>
-                          <button onClick={handleAiStylist} className="px-4 py-2 bg-purple-600 text-white rounded-lg font-bold hover:scale-105 transition-transform flex items-center shadow-lg">
+                          <button onClick={handleAiStylist} className="px-4 py-2 bg-[var(--pink)] text-white rounded-lg font-bold hover:scale-105 transition-transform flex items-center shadow-lg">
                               <Sparkles size={16} className="mr-2"/> ถามน้องซี
                           </button>
                       </div>
 
-                      <div className="glass-card p-6 space-y-4 border-purple">
+                      <div className="glass-card p-6 space-y-4 border-[var(--pink)]">
                           <h3 className="font-bold">ปรับแต่งเอง</h3>
                           <div className="grid grid-cols-2 gap-4">
                               <div><label className="text-xs font-bold">สีพื้นหลัง</label><input type="color" value={themeConfig.backgroundColor} onChange={e => setThemeConfig({...themeConfig, backgroundColor: e.target.value})} className="w-full h-10 rounded mt-1"/></div>
@@ -305,7 +305,7 @@ export const Dashboard: React.FC = () => {
                   </div>
               )}
               
-              <button onClick={handleSave} className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"><Save size={20} className="mr-2"/> บันทึก & สร้างหน้าเว็บ</button>
+              <button onClick={handleSave} className="w-full py-4 bg-[var(--orange)] text-white rounded-xl font-bold shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"><Save size={20} className="mr-2"/> บันทึก & สร้างหน้าเว็บ</button>
               
               {shareLink && (
                   <div className="mt-4 p-4 bg-green-500/10 rounded-xl border border-green-500 flex justify-between items-center glass-card">

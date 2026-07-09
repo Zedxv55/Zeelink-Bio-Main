@@ -54,7 +54,7 @@ export const Vote: React.FC = () => {
                </div>
                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                   {filtered.map(q => (
-                    <div key={q.id} className="glass-card p-5 flex justify-between items-center hover:bg-white/10 transition-all border-cyan hover-glow-cyan">
+                    <div key={q.id} className="glass-card p-5 flex justify-between items-center hover:bg-white/10 transition-all border-[var(--orange)] hover-glow-cyan">
                        <div className="flex-1 pr-4">
                           <p className="font-bold text-sm mb-1">{q.text}</p>
                           <p className="text-[10px] opacity-60">โดย @{q.username} • {new Date(q.createdAt).toLocaleDateString()}</p>
@@ -70,7 +70,7 @@ export const Vote: React.FC = () => {
           </div>
 
           {/* RIGHT COLUMN: Purple Glass Top 5 */}
-          <div className="glass-card p-6 border-purple h-fit">
+          <div className="glass-card p-6 border-[var(--pink)] h-fit">
              <div className="flex items-center space-x-2 mb-6">
                 <Award className="text-yellow-400" size={24} />
                 <h2 className="text-2xl font-bold">TOP 5 ประจำวัน</h2>
@@ -84,7 +84,7 @@ export const Vote: React.FC = () => {
                   if (idx === 0) rankStyle += " border-yellow-400 from-yellow-500/10 to-transparent";
                   else if (idx === 1) rankStyle += " border-gray-300 from-gray-500/10 to-transparent";
                   else if (idx === 2) rankStyle += " border-orange-400 from-orange-500/10 to-transparent";
-                  else rankStyle += " border-purple-400 from-purple-500/10 to-transparent";
+                  else rankStyle += " border-[var(--pink)] from-[var(--pink)]/10 to-transparent";
 
                   return (
                     <div key={q.id} className={`relative bg-gradient-to-r p-6 shadow-md transition-transform hover:-translate-y-1 rounded-r-xl ${rankStyle} glass-card`}>
@@ -109,7 +109,7 @@ export const Vote: React.FC = () => {
                               </div>
                               <div className="flex space-x-2">
                                  <button onClick={() => voteQuestion(q.id)} className="p-2 bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 rounded-full transition-all"><Heart size={18} className={q.votedUserIds.includes(user?.id || '') ? 'fill-pink-500' : ''}/></button>
-                                 <button onClick={() => navigate(`/${asker.username}`)} className="p-2 bg-white/10 hover:bg-white/20 text-blue-400 rounded-full transition-all"><User size={18}/></button>
+                                 <button onClick={() => navigate(`/${asker.username}`)} className="p-2 bg-white/10 hover:bg-white/20 text-[var(--blue)] rounded-full transition-all"><User size={18}/></button>
                               </div>
                            </div>
                         )}

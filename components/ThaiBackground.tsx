@@ -17,9 +17,9 @@ export const ThaiBackground: React.FC = () => {
   const { theme } = useTheme();
   const [words, setWords] = useState<FloatingWord[]>([]);
   
-  const glowColors = theme === 'dark' 
-    ? ['#00FFFF', '#FF00FF', '#00FF00', '#FFFF00'] 
-    : ['#FFA500', '#FF4500', '#DA70D6', '#20B2AA'];
+  const glowColors = theme === 'dark'
+    ? ['#FF7A2F', '#E36B9B', '#3D7DD6', '#4F9D69']
+    : ['#E8651E', '#E36B9B', '#3D7DD6', '#4F9D69'];
 
   useEffect(() => {
     const initialWords: FloatingWord[] = [];

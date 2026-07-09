@@ -10,97 +10,112 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [remember, setRemember] = useState(false);
+  const [error, setError] = useState('');
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (isLogin) {
-      const success = await login(email, password, remember);
-      if (success) {
-        if (email === 'zbcd1053@gmail.com') {
-             navigate('/admin');
-        } else {
-             navigate('/dashboard');
-        }
+      const user = await login(email, password, remember);
+      if (user) {
+        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
       } else {
-        alert('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูล');
+        setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
       }
     } else {
-      const success = await register(email, password, name);
-      if (success) {
-        alert('สมัครสมาชิกเรียบร้อยแล้ว');
-        navigate('/dashboard');
+      const user = await register(email, password, name);
+      if (user) {
+        alert('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
+        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+      } else {
+        setError('ไม่สามารถสมัครได้ อาจเผื่ออีเมลซ้ำหรือรหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)');
       }
     }
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-4">
+    <div className="min-h-screen relative flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
       <ThaiBackground />
-      <div className="relative z-10 w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-100 dark:border-gray-700">
-        <h2 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
+      <div
+        className="relative z-10 w-full max-w-md rounded-2xl shadow-2xl p-8"
+        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+      >
+        <h2 className="text-3xl font-bold text-center mb-2" style={{ color: 'var(--text-primary)' }}>
           {isLogin ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
         </h2>
-        <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
+        <p className="text-center mb-8" style={{ color: 'var(--text-muted)' }}>
           {isLogin ? 'ยินดีต้อนรับกลับสู่ Zeelink' : 'สร้างบัญชีเพื่อเริ่มต้นใช้งาน'}
         </p>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--orange-soft)', color: 'var(--orange-deep)' }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="relative">
-              <User className="absolute left-3 top-3 text-gray-400" size={20} />
+              <User className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
               <input
                 type="text"
                 placeholder="ชื่อของคุณ"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
                 required={!isLogin}
               />
             </div>
           )}
           <div className="relative">
-            <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
+            <Mail className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
             <input
               type="email"
               placeholder="อีเมล"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
+              style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
               required
             />
           </div>
           <div className="relative">
-            <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
+            <Lock className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
             <input
               type="password"
               placeholder="รหัสผ่าน"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
+              style={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
               required
             />
           </div>
 
           {isLogin && (
             <div className="flex items-center">
-                <input 
-                    type="checkbox" 
-                    id="remember"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300" 
-                />
-                <label htmlFor="remember" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                    จำฉันไว้
-                </label>
+              <input
+                type="checkbox"
+                id="remember"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="w-4 h-4 rounded"
+                style={{ accentColor: 'var(--orange)' }}
+              />
+              <label htmlFor="remember" className="ml-2 block text-sm" style={{ color: 'var(--text-muted)' }}>
+                จำฉันไว้
+              </label>
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
+            className="w-full py-3 rounded-lg font-bold transition-colors"
+            style={{ background: 'var(--orange)', color: '#fff' }}
           >
             {isLogin ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
           </button>
@@ -109,7 +124,8 @@ export const Login: React.FC = () => {
         <div className="mt-6 text-center text-sm">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 dark:text-blue-400 hover:underline"
+            className="hover:underline font-bold"
+            style={{ color: 'var(--orange)' }}
           >
             {isLogin ? 'ยังไม่มีบัญชี? สมัครสมาชิก' : 'มีบัญชีแล้ว? เข้าสู่ระบบ'}
           </button>
@@ -118,3 +134,5 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+
+export default Login;

@@ -36,17 +36,17 @@ export const AdminPanel: React.FC = () => {
         <div className="min-h-screen pt-24 px-4 pb-20">
             <div className="max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
-                    <h1 className="text-3xl font-bold flex items-center"><ShieldCheck className="mr-3 text-blue-600" size={32} />Admin Control</h1>
+                    <h1 className="text-3xl font-bold flex items-center"><ShieldCheck className="mr-3 text-[var(--orange)]" size={32} />Admin Control</h1>
                     <div className="glass-card p-1 flex space-x-2">
-                        <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'}`}>Users</button>
-                        <button onClick={() => setActiveTab('popups')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'popups' ? 'bg-purple-600 text-white' : 'hover:bg-white/10'}`}>Popups</button>
+                        <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-[var(--orange)] text-white' : 'hover:bg-white/10'}`}>Users</button>
+                        <button onClick={() => setActiveTab('popups')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'popups' ? 'bg-[var(--pink)] text-white' : 'hover:bg-white/10'}`}>Popups</button>
                         <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'links' ? 'bg-orange-600 text-white' : 'hover:bg-white/10'}`}>Links</button>
                         <button onClick={() => setActiveTab('backup')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'backup' ? 'bg-green-600 text-white' : 'hover:bg-white/10'}`}>Backup</button>
                     </div>
                 </div>
 
                 {activeTab === 'users' && (
-                    <div className="glass-card overflow-hidden border-blue-500/30">
+                    <div className="glass-card overflow-hidden border-[var(--orange)]/30">
                         <table className="w-full text-left">
                             <thead className="bg-black/10 text-[10px] uppercase font-bold text-gray-500">
                                 <tr><th className="px-6 py-4">User</th><th className="px-6 py-4">Status</th><th className="px-6 py-4 text-right">Action</th></tr>
@@ -73,14 +73,14 @@ export const AdminPanel: React.FC = () => {
 
                 {activeTab === 'popups' && (
                     <div className="space-y-8 animate-fade-in">
-                        <div className="glass-card p-6 border-purple">
+                        <div className="glass-card p-6 border-[var(--pink)]">
                             <h3 className="font-bold mb-4">สร้าง Popup โฆษณาใหม่</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <input value={popupTitle} onChange={e => setPopupTitle(e.target.value)} placeholder="หัวข้อโฆษณา" className="p-2 rounded-lg" />
                                 <input value={popupImage} onChange={e => setPopupImage(e.target.value)} placeholder="URL รูปภาพ" className="p-2 rounded-lg" />
                                 <input value={popupLink} onChange={e => setPopupLink(e.target.value)} placeholder="ลิงก์ปลายทาง" className="p-2 rounded-lg" />
                             </div>
-                            <button onClick={handleCreatePopup} className="mt-4 px-6 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-lg">สร้าง Popup</button>
+                            <button onClick={handleCreatePopup} className="mt-4 px-6 py-2 bg-[var(--pink)] text-white font-bold rounded-lg hover:opacity-85 shadow-lg">สร้าง Popup</button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
