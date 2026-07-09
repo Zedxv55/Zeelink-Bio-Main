@@ -5,6 +5,7 @@ import { Link, Profile, ThemeConfig } from '../types';
 import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
+import { supabase } from '../contexts/supabaseClient';
 
 export const Dashboard: React.FC = () => {
   const { user, profile, updateProfile, askAiStylist } = useAuth();
@@ -80,16 +81,29 @@ export const Dashboard: React.FC = () => {
       }
   }, [province, district, subDistrict]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-          alert('❌ ไฟล์ใหญ่เกินไป! กรุณาเลือกรูปที่มีขนาดไม่เกิน 5 MB');
-          return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoUrl(reader.result as string);
-      reader.readAsDataURL(file);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('❌ ไฟล์ใหญ่เกินไป! กรุณาเลือกรูปที่มีขนาดไม่เกิน 5 MB');
+      return;
+    }
+    if (!user) { alert('กรุณาเข้าสู่ระบบก่อน'); return; }
+
+    try {
+      const safeName = file.name.replace(/\s+/g, '-');
+      const path = `${user.id}/${Date.now()}-${safeName}`;
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true });
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      setPhotoUrl(data.publicUrl);
+      alert('✅ อัปโหลดรูปโปรไฟล์แล้ว');
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('อัปโหลดไม่สำเร็จ กรุณาลองใหม่');
     }
   };
 
