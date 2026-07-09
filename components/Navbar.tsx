@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Home, User, Map, Vote, LogOut, Sun, Moon, Menu, X } from 'lucide-react';
+import { Logo } from './Logo';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -22,12 +23,7 @@ export const Navbar: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <img
-              src="https://brilliant-maroon-7qyv9qr1xg.edgeone.app/zl_icon_white_bg.png"
-              alt="Zeelink"
-              className="h-8 w-8 rounded"
-            />
-            <span className="pixel-font" style={{ fontSize: 16, color: '#fff' }}>ZEELINK</span>
+            <Logo size={34} variant="dark" withWordmark />
           </Link>
 
           {/* Desktop Navigation */}
@@ -41,13 +37,13 @@ export const Navbar: React.FC = () => {
                   <User size={16} className="mr-2" /> Dashboard
                 </Link>
                 <Link to="/explore" className="pixel-link font-bold text-sm flex items-center">
-                  <Map size={16} className="mr-2" /> Online
+                  <Map size={16} className="mr-2" /> แผนที่
                 </Link>
                 <Link to="/vote" className="pixel-link font-bold text-sm flex items-center">
                   <Vote size={16} className="mr-2" /> โหวต
                 </Link>
                 {user.role === 'admin' && (
-                  <Link to="/admin" className="pixel-link font-bold text-sm" style={{ color: '#ff4fd8' }}>
+                  <Link to="/admin" className="pixel-link font-bold text-sm" style={{ color: 'var(--orange)' }}>
                     Admin
                   </Link>
                 )}
@@ -57,7 +53,7 @@ export const Navbar: React.FC = () => {
             <button
               onClick={toggleTheme}
               className="ml-2 p-2 transition-colors"
-              style={{ color: '#ECEAF6' }}
+              style={{ color: 'var(--text-primary)' }}
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
@@ -69,7 +65,7 @@ export const Navbar: React.FC = () => {
                   src={user.photoUrl}
                   alt={user.name}
                   className="w-8 h-8 rounded-full border-2"
-                  style={{ borderColor: '#00e5ff' }}
+                  style={{ borderColor: 'var(--orange)' }}
                 />
                 <button
                   onClick={handleLogout}
@@ -89,7 +85,7 @@ export const Navbar: React.FC = () => {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 transition-colors"
-            style={{ color: '#ECEAF6' }}
+            style={{ color: 'var(--text-primary)' }}
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -99,7 +95,7 @@ export const Navbar: React.FC = () => {
         {mobileMenuOpen && (
           <div
             className="md:hidden py-4 border-t-2 animate-fade-in"
-            style={{ borderColor: '#00e5ff', background: 'rgba(12,10,31,0.98)' }}
+            style={{ borderColor: 'var(--glass-border)', background: 'var(--glass-bg)' }}
           >
             <div className="flex flex-col space-y-2">
               <Link to="/" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center">
@@ -112,13 +108,13 @@ export const Navbar: React.FC = () => {
                     <User size={18} className="mr-3" /> Dashboard
                   </Link>
                   <Link to="/explore" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center">
-                    <Map size={18} className="mr-3" /> Online
+                    <Map size={18} className="mr-3" /> แผนที่
                   </Link>
                   <Link to="/vote" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center">
                     <Vote size={18} className="mr-3" /> โหวต
                   </Link>
                   {user.role === 'admin' && (
-                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold" style={{ color: '#ff4fd8' }}>
+                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold" style={{ color: 'var(--orange)' }}>
                       Admin Panel
                     </Link>
                   )}
@@ -135,9 +131,9 @@ export const Navbar: React.FC = () => {
               {user ? (
                 <>
                   <div className="px-4 py-3 flex items-center space-x-3">
-                    <img src={user.photoUrl} alt={user.name} className="w-10 h-10 rounded-full border-2" style={{ borderColor: '#00e5ff' }} />
+                    <img src={user.photoUrl} alt={user.name} className="w-10 h-10 rounded-full border-2" style={{ borderColor: 'var(--orange)' }} />
                     <div>
-                      <p className="font-bold" style={{ color: '#fff' }}>{user.name}</p>
+                      <p className="font-bold" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
                       <p className="text-xs opacity-60">{user.email}</p>
                     </div>
                   </div>
@@ -157,3 +153,5 @@ export const Navbar: React.FC = () => {
     </nav>
   );
 };
+
+export default Navbar;
