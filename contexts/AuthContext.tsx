@@ -14,6 +14,7 @@ interface AuthContextType {
 
   // Methods
   login: (email: string, password: string, remember?: boolean) => Promise<User | null>;
+  loginWithOAuth: (provider: 'google' | 'facebook') => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<{ user: User | null; needsConfirmation?: boolean }>;
   resetPassword: (email: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -79,6 +80,56 @@ const mapProfile = (p: any): Profile => ({
   updatedAt: p.updated_at
 });
 
+const DEFAULT_THEME = {
+  backgroundColor: '#ffffff',
+  textColor: '#000000',
+  buttonColor: '#000000',
+  fontFamily: 'Prompt',
+  layout: 'minimal',
+  enableGlassEffect: false
+};
+
+// สร้างแถวในตาราง public.users + profiles หากยังไม่มี
+// (แอปใช้ตาราง users แยกจาก auth.users และไม่มี trigger สร้างอัตโนมัติ
+//  จึงต้องสร้างเองทั้งตอนล็อกอินอีเมลและตอนล็อกอินผ่าน OAuth)
+const ensureUserRecord = async (email: string, name?: string, photoUrl?: string) => {
+  if (!email) return;
+
+  const { data: existingUser } = await supabase
+    .from('users').select('id').eq('email', email).maybeSingle();
+
+  let userId = existingUser?.id;
+  if (!existingUser) {
+    const display = name || email.split('@')[0];
+    const { data: inserted, error } = await supabase
+      .from('users')
+      .insert([{ email, name: display, photo_url: photoUrl || null, role: 'user', is_banned: false }])
+      .select('id').single();
+    if (error) { console.error('ensureUserRecord users error:', error); return; }
+    userId = inserted.id;
+  }
+
+  if (!userId) return;
+
+  const { data: existingProfile } = await supabase
+    .from('profiles').select('id').eq('user_id', userId).maybeSingle();
+  if (existingProfile) return;
+
+  const base = (name || email.split('@')[0]).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() || 'user';
+  const username = `${base}-${Math.random().toString(36).slice(2, 7)}`;
+  const { error: pErr } = await supabase.from('profiles').insert([{
+    user_id: userId,
+    username,
+    display_name: name || email.split('@')[0],
+    photo_url: photoUrl || null,
+    bio: '',
+    show_on_explore: false,
+    theme_config: DEFAULT_THEME,
+    links: []
+  }]);
+  if (pErr) console.error('ensureUserRecord profiles error:', pErr);
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -122,7 +173,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       if (remember) localStorage.setItem('zeelink_remember', '1');
-      // onAuthStateChange + loadUserByEmail จะโหลด state
+      // สร้างแถว users/profiles หากยังไม่มี (รองรับบัญชีที่สมัครก่อนมี trigger)
+      await ensureUserRecord(email);
       return await loadUserByEmail(email);
     } catch (error) {
       console.error('Login error:', error);
@@ -147,42 +199,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('อีเมลนี้ถูกใช้งานแล้ว');
       }
 
-      // รอให้ trigger/table sync เล็กน้อย แล้วสร้าง profile ถ้ายังไม่มี
-      const { data: userData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
+      // สร้างแถว users + profiles ถ้ายังไม่มี (แอปใช้ตาราง users แยกต่างหากจาก auth.users)
+      await ensureUserRecord(email, name);
 
-      if (userData) {
-        const { data: existing } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userData.id)
-          .maybeSingle();
-
-        if (!existing) {
-          await supabase.from('profiles').insert([{
-            user_id: userData.id,
-            username: email.split('@')[0],
-            display_name: name,
-            photo_url: userData.photo_url,
-            bio: '',
-            show_on_explore: false,
-            theme_config: {
-              backgroundColor: '#ffffff',
-              textColor: '#000000',
-              buttonColor: '#000000',
-              fontFamily: 'Prompt',
-              layout: 'minimal',
-              enableGlassEffect: false
-            },
-            links: []
-          }]);
-        }
-      }
-
-      // ถ้ามสีอีเมลยืนยัน (Confirm email เปิด) → session จะเปล่า
+      // ถ้าเปิด Confirm email → session จะเปล่า (ต้องยืนยันอีเมลก่อน)
       if (!data.session) {
         return { user: null, needsConfirmation: true };
       }
@@ -194,6 +214,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { user: null };
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loginWithOAuth = async (provider: 'google' | 'facebook'): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/dashboard` }
+      });
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('OAuth error:', error);
+      return false;
     }
   };
 
@@ -510,7 +544,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // ซิงค์ state เมื่อ login/logout ระหว่างใช้งาน
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user?.email) {
-        await loadUserByEmail(session.user.email);
+        let u = await loadUserByEmail(session.user.email);
+        // ผู้ใช้ที่ล็อกอินผ่าน OAuth จะยังไม่มีแถวในตาราง users → สร้างให้อัตโนมัติ
+        if (!u) {
+          const meta = session.user.user_metadata || {};
+          await ensureUserRecord(session.user.email, meta.full_name || meta.name, meta.avatar_url || meta.picture);
+          u = await loadUserByEmail(session.user.email);
+        }
       } else {
         setUser(null);
         setProfile(null);
@@ -522,7 +562,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user, profile, usersList, isLoading, activePopup, popups, questions,
-    login, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser,
+    login, loginWithOAuth, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser,
     simulateUsers, backupData, createPopup, togglePopup, deletePopup,
     closeActivePopup, addQuestion, voteQuestion, askAiStylist
   };
