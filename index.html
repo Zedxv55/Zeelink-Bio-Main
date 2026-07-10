@@ -191,6 +191,13 @@
       .leaflet-pane{ z-index:10; }
       .leaflet-top, .leaflet-bottom{ z-index:20; }
 
+      /* ===== Vibrant illustrated Thai map (Amazing Thailand feel) ===== */
+      .thai-map-vibrant .leaflet-tile-pane{
+        filter: saturate(1.35) contrast(1.05) brightness(1.03) hue-rotate(-4deg);
+      }
+      .thai-map-vibrant .leaflet-container{ background:#aadaff; }
+      .landmark-icon{ background:transparent; border:none; }
+
       /* ===== Notebook layout primitives (ใช้ใน Landing) ===== */
       .nb-rail{
         position:fixed; top:0; bottom:0; left:calc(50% - var(--maxw)/2 - 46px);

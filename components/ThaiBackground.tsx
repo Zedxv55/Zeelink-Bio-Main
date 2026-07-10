@@ -13,10 +13,15 @@ interface FloatingWord {
   glowColor: string;
 }
 
-export const ThaiBackground: React.FC = () => {
+interface ThaiBackgroundProps {
+  // When provided, floating phrases become clickable filter buttons
+  onTagClick?: (phrase: string) => void;
+}
+
+export const ThaiBackground: React.FC<ThaiBackgroundProps> = ({ onTagClick }) => {
   const { theme } = useTheme();
   const [words, setWords] = useState<FloatingWord[]>([]);
-  
+
   const glowColors = theme === 'dark'
     ? ['#FF7A2F', '#E36B9B', '#3D7DD6', '#4F9D69']
     : ['#E8651E', '#E36B9B', '#3D7DD6', '#4F9D69'];
@@ -24,7 +29,7 @@ export const ThaiBackground: React.FC = () => {
   useEffect(() => {
     const initialWords: FloatingWord[] = [];
     const count = 7;
-    
+
     for (let i = 0; i < count; i++) {
         initialWords.push({
             id: i,
@@ -54,23 +59,50 @@ export const ThaiBackground: React.FC = () => {
           transition: text-shadow 2s ease;
         }
       `}</style>
-      
-      {words.map((word) => (
+
+      {words.map((word) => {
+        const commonStyle: React.CSSProperties = {
+            top: `${word.top}%`,
+            left: `${word.left}%`,
+            color: theme === 'dark' ? '#fff' : '#2d2d2d',
+            textShadow: `0 0 15px ${word.glowColor}66, 0 0 30px ${word.glowColor}33`,
+            animation: `multiFloat ${word.speed}s ease-in-out ${word.delay}s infinite alternate`,
+            opacity: 0
+        };
+
+        // Interactive mode: render as clickable filter button
+        if (onTagClick) {
+          return (
+            <button
+              key={`${word.id}-${theme}`}
+              onClick={() => onTagClick(word.text)}
+              className="absolute whitespace-nowrap text-2xl md:text-4xl font-bold glow-text pointer-events-auto cursor-pointer hover:scale-110 transition-transform"
+              style={{
+                ...commonStyle,
+                background: 'transparent',
+                border: `2px solid ${word.glowColor}55`,
+                borderRadius: '999px',
+                padding: '4px 14px',
+                backdropFilter: 'blur(2px)'
+              }}
+              title={`แสดงโปรไฟล์ที่เข้ากับ "${word.text}"`}
+            >
+              {word.text}
+            </button>
+          );
+        }
+
+        // Static mode (decorative only)
+        return (
           <div
             key={`${word.id}-${theme}`}
             className="absolute whitespace-nowrap text-2xl md:text-4xl font-bold glow-text"
-            style={{
-                top: `${word.top}%`,
-                left: `${word.left}%`,
-                color: theme === 'dark' ? '#fff' : '#2d2d2d',
-                textShadow: `0 0 15px ${word.glowColor}66, 0 0 30px ${word.glowColor}33`,
-                animation: `multiFloat ${word.speed}s ease-in-out ${word.delay}s infinite alternate`,
-                opacity: 0
-            }}
+            style={commonStyle}
           >
-              {word.text}
+            {word.text}
           </div>
-      ))}
+        );
+      })}
 
       {/* Mirror particle effect */}
       <div className="absolute inset-0 opacity-10">

@@ -2,17 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { THAI_REGIONS, AVAILABLE_FONTS } from '../constants';
 import { Link, Profile, ThemeConfig } from '../types';
-import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon, GripVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
+import { DemoOverlay } from '../components/DemoOverlay';
 import { supabase } from '../contexts/supabaseClient';
+import { detectPlatform, isValidUrl } from '../lib/social';
+
+// ===== Image gallery limits (Security: client-side hard cap) =====
+// DB scale supports up to 100; regular users capped at 15 in this version
+const MAX_PORTFOLIO_IMAGES = 15;
+const DB_HARD_CAP = 100;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
 
 export const Dashboard: React.FC = () => {
   const { user, profile, updateProfile, askAiStylist } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [activeTab, setActiveTab] = useState<'profile' | 'design'>('profile');
 
   // Form State
@@ -20,7 +28,16 @@ export const Dashboard: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
-  
+
+  // Portfolio gallery state (seeded with demo mock data for preview mode)
+  const [portfolioImages, setPortfolioImages] = useState<string[]>([
+    'https://picsum.photos/seed/zeelink1/400/400',
+    'https://picsum.photos/seed/zeelink2/400/400',
+    'https://picsum.photos/seed/zeelink3/400/400'
+  ]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   // Detailed Location State
   const [region, setRegion] = useState('');
   const [province, setProvince] = useState('');
@@ -40,7 +57,12 @@ export const Dashboard: React.FC = () => {
   });
 
   const [showOnExplore, setShowOnExplore] = useState(true);
-  const [links, setLinks] = useState<Link[]>([]);
+  // Demo social links (shown in preview mode before login)
+  const [links, setLinks] = useState<Link[]>([
+    { id: 'demo1', title: 'Facebook', url: 'https://facebook.com/zeelink', clicks: 0, isActive: true },
+    { id: 'demo2', title: 'Instagram', url: 'https://instagram.com/zeelink', clicks: 0, isActive: true },
+    { id: 'demo3', title: 'GitHub', url: 'https://github.com/zeelink', clicks: 0, isActive: true }
+  ]);
   const [isNewUser, setIsNewUser] = useState(true);
   const [shareLink, setShareLink] = useState('');
 
@@ -54,18 +76,19 @@ export const Dashboard: React.FC = () => {
       setDisplayName(profile.displayName);
       setUsername(profile.username);
       setBio(profile.bio);
-      
+
       setRegion(profile.region || '');
       setProvince(profile.province);
       setDistrict(profile.district || '');
       setSubDistrict(profile.subDistrict || '');
       setPostalCode(profile.postalCode || '');
-      
+
       setShowOnExplore(profile.showOnExplore);
       setLinks(profile.links || []);
-      
+      setPortfolioImages(profile.portfolioImages || []);
+
       if (profile.themeConfig) setThemeConfig(profile.themeConfig);
-      
+
       setIsNewUser(false);
       if (profile.username) setShareLink(`${window.location.origin}/#/${profile.username}`);
     }
@@ -76,16 +99,16 @@ export const Dashboard: React.FC = () => {
       if (province) {
           const provData = selectedRegionData?.provinces.find(p => p.name === province);
           if (provData && district && subDistrict) {
-              // Mock logic: Base zip + random last 3 digits based on district length
-              setPostalCode(`${provData.zipCodeBase}000`); 
+              setPostalCode(`${provData.zipCodeBase}000`);
           }
       }
   }, [province, district, subDistrict]);
 
+  // ===== Single profile photo upload =====
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_FILE_SIZE) {
       alert('❌ ไฟล์ใหญ่เกินไป! กรุณาเลือกรูปที่มีขนาดไม่เกิน 5 MB');
       return;
     }
@@ -108,6 +131,62 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  // ===== Multi-image portfolio gallery upload =====
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploadError(null);
+
+    if (!user) { alert('กรุณาเข้าสู่ระบบก่อน'); return; }
+
+    // Hard cap enforcement (15 for regular users)
+    const remaining = MAX_PORTFOLIO_IMAGES - portfolioImages.length;
+    if (remaining <= 0) {
+      setUploadError(`🚫 คุณอัปโหลดรูปได้สูงสุด ${MAX_PORTFOLIO_IMAGES} รูปแล้ว ต้องการเพิ่ม? ปลดล็อกแพ็กเกจ Pro`);
+      return;
+    }
+    const accepted = files.slice(0, remaining);
+    if (files.length > remaining) {
+      setUploadError(`⚠️ รับเพียง ${remaining} รูป (เหลือโควตา) จาก ${files.length} ที่เลือก`);
+    }
+
+    for (const file of accepted) {
+      if (file.size > MAX_FILE_SIZE) {
+        setUploadError(`❌ ไฟล์ "${file.name}" ใหญ่เกิน 5 MB ข้ามไป`);
+        continue;
+      }
+      try {
+        const safeName = file.name.replace(/\s+/g, '-');
+        const path = `${user.id}/gallery/${Date.now()}-${safeName}`;
+        const { error } = await supabase.storage.from('avatars').upload(path, file);
+        if (error) throw error;
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+        setPortfolioImages(prev => [...prev, data.publicUrl]);
+      } catch (err) {
+        console.error('Gallery upload error:', err);
+      }
+    }
+    // reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // ===== Drag and drop reorder =====
+  const handleDragStart = (index: number) => setDragIndex(index);
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+    const updated = [...portfolioImages];
+    const [moved] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, moved);
+    setDragIndex(index);
+    setPortfolioImages(updated);
+  };
+  const handleDragEnd = () => setDragIndex(null);
+
+  const removeGalleryImage = (index: number) => {
+    setPortfolioImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAiStylist = () => {
       const newTheme = askAiStylist();
       setThemeConfig(newTheme);
@@ -116,8 +195,7 @@ export const Dashboard: React.FC = () => {
 
   const handleSave = () => {
     if (!user) return;
-    
-    // Strict Validation for Online Presence
+
     if (!photoUrl || photoUrl.includes('ui-avatars')) {
         alert('⚠️ กรุณาอัปโหลดรูปโปรไฟล์ก่อนบันทึก');
         return;
@@ -141,6 +219,7 @@ export const Dashboard: React.FC = () => {
       subDistrict,
       postalCode,
       tags: profile?.tags || [],
+      portfolioImages, // Save gallery
       showOnExplore,
       likes: profile?.likes || 0,
       views: profile?.views || 0,
@@ -172,10 +251,10 @@ export const Dashboard: React.FC = () => {
           <div className="absolute top-0 w-full h-6 bg-gray-800 flex justify-center z-20">
               <div className="w-1/3 h-4 bg-black rounded-b-xl"></div>
           </div>
-          <div 
+          <div
             className="w-full h-full overflow-y-auto p-6 pt-12 flex flex-col items-center relative"
-            style={{ 
-                backgroundColor: themeConfig.backgroundColor, 
+            style={{
+                backgroundColor: themeConfig.backgroundColor,
                 color: themeConfig.textColor,
                 fontFamily: themeConfig.fontFamily,
                 backgroundImage: themeConfig.backgroundImageUrl ? `url(${themeConfig.backgroundImageUrl})` : 'none',
@@ -186,38 +265,54 @@ export const Dashboard: React.FC = () => {
               {themeConfig.enableGlassEffect && (
                   <div className="absolute inset-0 bg-white/10 backdrop-blur-sm pointer-events-none" />
               )}
-              
+
               <div className="relative z-10 w-full flex flex-col items-center">
                   <img src={photoUrl || 'https://picsum.photos/200'} className="w-24 h-24 rounded-full border-4 border-current mb-4 object-cover" />
                   <h3 className="text-lg font-bold">{displayName || 'ชื่อของคุณ'}</h3>
                   <p className="text-sm opacity-80 mb-6 text-center whitespace-pre-wrap">{bio || 'คำอธิบายตัวตนของคุณ'}</p>
-                  
+
+                  {/* Portfolio gallery preview (first 4 images) */}
+                  {portfolioImages.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 w-full mb-4">
+                      {portfolioImages.slice(0, 4).map((img, i) => (
+                        <img key={i} src={img} className="w-full h-20 object-cover rounded-lg border border-white/20" alt={`work ${i+1}`} />
+                      ))}
+                    </div>
+                  )}
+
                   <div className="w-full space-y-3">
-                      {links.map(link => (
-                          <div 
+                      {links.map(link => {
+                        const platform = detectPlatform(link.url);
+                        const Icon = platform.icon;
+                        return (
+                          <div
                             key={link.id}
                             className={`w-full py-3 px-4 rounded-lg text-center font-medium text-sm transition-transform hover:scale-[1.02] ${themeConfig.enableGlassEffect ? 'bg-white/20 backdrop-blur-md border border-white/30' : ''}`}
-                            style={{ 
+                            style={{
                                 backgroundColor: themeConfig.enableGlassEffect ? undefined : themeConfig.buttonColor,
                                 color: themeConfig.enableGlassEffect ? themeConfig.textColor : '#fff'
                             }}
                           >
-                              {link.title || 'Link Title'}
+                            <Icon size={14} className="inline mr-2" />{link.title || platform.label}
                           </div>
-                      ))}
+                        );
+                      })}
                   </div>
               </div>
           </div>
       </div>
   );
 
-  if (!user) return <div className="p-20 text-center">Please login first</div>;
+  const isDemo = !user;
 
   return (
     <GlassBackground>
-      <div className="min-h-screen pt-24 pb-20 px-4">
+      {/* Demo mode: blur the preview content + show login CTA overlay */}
+      {isDemo && <DemoOverlay title="ล็อกอินเพื่อเริ่มต้นสร้างพอร์ต" subtitle="และเปิดใช้งานฟีเจอร์จริงของคุณ" />}
+
+      <div className={`min-h-screen pt-24 pb-20 px-4 ${isDemo ? 'pointer-events-none select-none blur-sm opacity-70' : ''}`}>
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
-          
+
           <div className="flex-1 space-y-6">
               <div className="glass-card p-2 flex space-x-2">
                   <button onClick={() => setActiveTab('profile')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-[var(--orange)] text-white shadow-lg' : 'hover:bg-white/10'}`}> <User size={18} className="inline mr-2" /> ข้อมูลทั่วไป </button>
@@ -233,6 +328,56 @@ export const Dashboard: React.FC = () => {
                               <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[var(--orange)] text-white rounded-lg text-sm hover:bg-[var(--orange-deep)] font-bold"><Camera size={16} className="inline mr-2"/> อัปโหลด</button>
                               <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
                           </div>
+                      </div>
+
+                      {/* ===== Portfolio Image Gallery ===== */}
+                      <div className="glass-card p-6 border-[var(--blue)]">
+                          <div className="flex justify-between items-center mb-4">
+                              <h3 className="font-bold flex items-center"><ImageIcon size={18} className="mr-2 text-[var(--blue)]" /> รูปภาพผลงาน</h3>
+                              <span className={`text-xs font-bold px-3 py-1 rounded-full ${portfolioImages.length >= MAX_PORTFOLIO_IMAGES ? 'bg-red-500/20 text-red-400' : 'bg-[var(--blue)]/20 text-[var(--blue)]'}`}>
+                                  รูปภาพของคุณ ({portfolioImages.length}/{MAX_PORTFOLIO_IMAGES} รูป)
+                              </span>
+                          </div>
+
+                          {/* Upload zone */}
+                          <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 cursor-pointer transition-colors ${portfolioImages.length >= MAX_PORTFOLIO_IMAGES ? 'border-gray-500/30 opacity-50 cursor-not-allowed' : 'border-[var(--blue)]/40 hover:border-[var(--blue)]'}`}>
+                              <Camera size={28} className="text-[var(--blue)] mb-2" />
+                              <span className="text-sm font-bold">{portfolioImages.length >= MAX_PORTFOLIO_IMAGES ? 'เต็มโควตาแล้ว' : 'คลิกเพื่อเพิ่มรูปภาพ'}</span>
+                              <span className="text-[11px] opacity-60 mt-1">สูงสุด {MAX_PORTFOLIO_IMAGES} รูป · ไฟล์ละไม่เกิน 5 MB</span>
+                              <input type="file" multiple accept="image/*" onChange={handleGalleryUpload} className="hidden" disabled={portfolioImages.length >= MAX_PORTFOLIO_IMAGES} />
+                          </label>
+
+                          {uploadError && (
+                              <p className="text-[11px] text-red-400 mt-2 p-2 bg-red-500/10 rounded-lg">{uploadError}</p>
+                          )}
+
+                          {/* Gallery grid with drag-drop */}
+                          {portfolioImages.length > 0 && (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
+                                {portfolioImages.map((img, index) => (
+                                  <div
+                                    key={index}
+                                    draggable
+                                    onDragStart={() => handleDragStart(index)}
+                                    onDragOver={(e) => handleDragOver(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                    className={`relative group rounded-lg overflow-hidden border-2 cursor-move transition-all ${dragIndex === index ? 'border-[var(--orange)] opacity-50' : 'border-white/10 hover:border-[var(--blue)]'}`}
+                                  >
+                                      <img src={img} className="w-full h-24 object-cover" alt={`portfolio ${index+1}`} />
+                                      <div className="absolute top-1 left-1 bg-black/60 rounded px-1.5 text-[10px] font-bold flex items-center">
+                                          <GripVertical size={10} className="mr-0.5" />{index + 1}
+                                      </div>
+                                      <button
+                                        onClick={() => removeGalleryImage(index)}
+                                        className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                          <p className="text-[11px] opacity-50 mt-3">💡 ลากรูปเพื่อจัดเรียงลำดับ (รูปแรกจะเป็นภาพเด่น)</p>
                       </div>
 
                       <div className="glass-card p-6 space-y-4 border-[var(--orange)]">
@@ -255,10 +400,10 @@ export const Dashboard: React.FC = () => {
                               <input value={subDistrict} onChange={e => setSubDistrict(e.target.value)} placeholder="ตำบล (พิมพ์เอง)" className="w-full p-3 rounded-lg" />
                               <input value={postalCode} readOnly placeholder="รหัสไปรษณีย์ (ออโต้)" className="w-full p-3 rounded-lg opacity-70" />
                           </div>
-                          
+
                           <div className="flex items-center justify-between p-4 bg-black/10 rounded-lg mt-4">
                               <span className="text-sm font-bold">แสดงบนหน้า Online</span>
-                              <button onClick={() => setShowOnExplore(!showOnExplore)} className={`w-12 h-6 rounded-full transition-colors ${showOnExplore ? 'bg-green-500' : 'bg-gray-400'}`}><div className={`w-4 h-4 bg-white rounded-full transform transition-transform ${showOnExplore ? 'translate-x-7' : 'translate-x-1'} mt-1`}></div></button>
+                              <button onClick={() => setShowOnExplore(!showOnExplore)} className={`w-12 h-6 rounded-full transition-colors ${showOnExplore ? 'bg-green-500' : 'bg-gray-400'}`}><div className={`w-4 h-4 bg-white rounded-full transform transition-transform ${showOnExplore ? 'translate-x-7' : 'translate-x-1'} mt-1`} /></button>
                           </div>
                       </div>
                   </div>
@@ -304,24 +449,36 @@ export const Dashboard: React.FC = () => {
 
                       <div className="glass-card p-6 border-pink">
                            <div className="flex justify-between items-center mb-4">
-                               <h3 className="font-bold">ลิงก์ของคุณ</h3>
+                               <h3 className="font-bold">ลิงก์โซเชียลของคุณ</h3>
                                <button onClick={handleAddLink} className="text-white text-xs font-bold flex items-center px-3 py-1 bg-pink-500 rounded-full hover:bg-pink-600"><Plus size={14} className="mr-1" /> เพิ่มลิงก์</button>
                            </div>
                            <div className="space-y-3">
-                              {links.map((link) => (
-                                <div key={link.id} className="flex items-center space-x-2 p-2 bg-black/10 rounded-lg border border-white/10">
-                                  <input value={link.title} onChange={(e) => handleLinkChange(link.id, 'title', e.target.value)} className="flex-1 p-1 bg-transparent border-b text-sm font-bold" placeholder="ชื่อปุ่ม" />
-                                  <input value={link.url} onChange={(e) => handleLinkChange(link.id, 'url', e.target.value)} className="flex-1 p-1 bg-transparent border-b text-xs text-muted" placeholder="URL" />
-                                  <button onClick={() => handleRemoveLink(link.id)} className="text-red-500"><Trash2 size={16}/></button>
-                                </div>
-                              ))}
+                              {links.map((link) => {
+                                const platform = detectPlatform(link.url);
+                                const Icon = platform.icon;
+                                const urlValid = !link.url || isValidUrl(link.url);
+                                return (
+                                  <div key={link.id} className="flex items-center space-x-2 p-2 bg-black/10 rounded-lg border border-white/10">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${urlValid ? 'bg-[var(--pink)]/20 text-[var(--pink)]' : 'bg-red-500/20 text-red-400'}`}>
+                                      <Icon size={16} />
+                                    </div>
+                                    <input value={link.title} onChange={(e) => handleLinkChange(link.id, 'title', e.target.value)} className="flex-1 p-1 bg-transparent border-b text-sm font-bold" placeholder={platform.label} />
+                                    <input value={link.url} onChange={(e) => handleLinkChange(link.id, 'url', e.target.value)} className={`flex-1 p-1 bg-transparent border-b text-xs ${urlValid ? 'text-muted' : 'text-red-400'}`} placeholder="https://..." />
+                                    {!urlValid && <span className="text-[10px] text-red-400">URL ไม่ถูกต้อง</span>}
+                                    <button onClick={() => handleRemoveLink(link.id)} className="text-red-500"><Trash2 size={16}/></button>
+                                  </div>
+                                );
+                              })}
+                              {links.length === 0 && (
+                                <p className="text-[11px] opacity-50 text-center py-2">ยังไม่มีลิงก์ เพิ่ม Facebook, Instagram, TikTok, GitHub, Line ฯลฯ ได้เลย</p>
+                              )}
                            </div>
                       </div>
                   </div>
               )}
-              
+
               <Button variant="primary" size="lg" fullWidth leftIcon={<Save size={20} />} onClick={handleSave}>บันทึก &amp; สร้างหน้าเว็บ</Button>
-              
+
               {shareLink && (
                   <div className="mt-4 p-4 bg-green-500/10 rounded-xl border border-green-500 flex justify-between items-center glass-card">
                       <div className="overflow-hidden mr-4">

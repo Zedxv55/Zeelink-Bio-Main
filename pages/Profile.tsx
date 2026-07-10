@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Profile as ProfileType } from '../types';
-import { MapPin, Heart, Eye, Calendar, Map as MapIcon } from 'lucide-react';
+import { MapPin, Heart, Eye, Calendar, Map as MapIcon, Image as ImageIcon } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { fonts, fontSize, palette } from '../lib/designTokens';
+import { detectPlatform, isValidUrl } from '../lib/social';
 
 export const ProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>();
@@ -59,6 +60,26 @@ export const ProfilePage: React.FC = () => {
                  </p>
              </div>
 
+             {/* Portfolio Image Gallery */}
+             {profile.portfolioImages && profile.portfolioImages.length > 0 && (
+               <div className="w-full mb-10">
+                 <h3 className="text-sm font-bold mb-3 flex items-center justify-center opacity-80">
+                   <ImageIcon size={14} className="mr-1" /> ผลงาน ({profile.portfolioImages.length} รูป)
+                 </h3>
+                 <div className="grid grid-cols-3 gap-2">
+                   {profile.portfolioImages.map((img, i) => (
+                     <img
+                       key={i}
+                       src={img}
+                       alt={`result ${i + 1}`}
+                       className="w-full h-28 object-cover rounded-xl border border-current/10 hover:scale-105 transition-transform cursor-pointer"
+                       onClick={() => window.open(img, '_blank')}
+                     />
+                   ))}
+                 </div>
+               </div>
+             )}
+
              {/* Stats */}
              <div className="flex justify-center space-x-8 w-full mb-10 py-6 border-y border-current/10">
                  <div className="text-center">
@@ -81,18 +102,25 @@ export const ProfilePage: React.FC = () => {
                  </button>
              </div>
 
-             {/* Links */}
+             {/* Links (with social platform icons) */}
              <div className="w-full space-y-4 mb-12">
-                 {profile.links.map(link => (
-                    <a key={link.id} href={link.url} target="_blank" rel="noreferrer" 
-                       className={`block w-full py-4 text-center font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all opacity-90 hover:opacity-100 ${theme.enableGlassEffect ? 'backdrop-blur-md border border-white/30' : ''}`} 
-                       style={{ 
-                           backgroundColor: theme.enableGlassEffect ? 'rgba(255,255,255,0.2)' : theme.buttonColor, 
-                           color: theme.enableGlassEffect ? theme.textColor : '#fff' 
-                       }}>
-                        {link.title}
-                    </a>
-                 ))}
+                 {profile.links.map(link => {
+                    const platform = detectPlatform(link.url);
+                    const Icon = platform.icon;
+                    const safeUrl = isValidUrl(link.url) ? link.url : '#';
+                    const label = link.title || platform.label;
+                    return (
+                      <a key={link.id} href={safeUrl} target="_blank" rel="noreferrer noopener"
+                         className={`flex items-center justify-center space-x-2 w-full py-4 text-center font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all opacity-90 hover:opacity-100 ${theme.enableGlassEffect ? 'backdrop-blur-md border border-white/30' : ''}`}
+                         style={{
+                             backgroundColor: theme.enableGlassEffect ? 'rgba(255,255,255,0.2)' : theme.buttonColor,
+                             color: theme.enableGlassEffect ? theme.textColor : '#fff'
+                         }}>
+                          <Icon size={18} />
+                          <span>{label}</span>
+                      </a>
+                    );
+                 })}
              </div>
           </div>
 

@@ -39,6 +39,10 @@ export interface Profile {
   photoUrl: string;
   bio: string;
   tags: string[];
+
+  // Portfolio Gallery (multi-image support)
+  // DB scale supports up to 100 images; regular users capped at 15 (HARD_CAP)
+  portfolioImages?: string[];
   
   // Location (Detailed)
   region: string;

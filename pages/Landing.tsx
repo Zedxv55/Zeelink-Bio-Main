@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Profile } from '../types';
+import { ThaiBackground } from '../components/ThaiBackground';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { fonts, fontSize, lineHeight, spacing, layout } from '../lib/designTokens';
-import { LayoutDashboard, Map, Vote, LogIn, ArrowRight, Sparkles, Globe } from 'lucide-react';
+import { LayoutDashboard, Map, Vote, LogIn, ArrowRight, Sparkles, Globe, X } from 'lucide-react';
 
 // แผนที่ไทยแบบพิกเซล (1 = บก, 0 = ทะเล) — สัดส่วนคร่าวๆ
 const MAP = [
@@ -60,11 +62,32 @@ const SAMPLES = [
 const CELL = 15, GAP = 3, PITCH = CELL + GAP;
 
 export const Landing: React.FC = () => {
-  const { user } = useAuth();
+  const { user, usersList } = useAuth();
   const navigate = useNavigate();
+
+  // ===== Interactive tag → filter profiles by mood (simulated) =====
+  const [activeMood, setActiveMood] = useState<string | null>(null);
+
+  const filterProfilesByMood = (mood: string): Profile[] => {
+    const kw = mood.toLowerCase();
+    const matched = usersList.filter(u =>
+      (u.tags || []).some(t => t.toLowerCase().includes(kw)) ||
+      (u.bio || '').toLowerCase().includes(kw) ||
+      (u.displayName || '').toLowerCase().includes(kw)
+    );
+    // No direct match → show a random sample (simulated "matching vibe")
+    if (matched.length === 0) {
+      const shuffled = [...usersList].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, 6);
+    }
+    return matched.slice(0, 8);
+  };
 
   return (
     <div className="pixel-landing">
+      {/* ===== Interactive floating phrases (clickable filter tags) ===== */}
+      <ThaiBackground onTagClick={setActiveMood} />
+
       {/* ลูกเล่นลอยตัว */}
       <span className="float-deco" style={{ top: '12%', left: '8%' }}>⚡</span>
       <span className="float-deco" style={{ top: '22%', right: '10%', animationDelay: '1s' }}>🌟</span>
@@ -209,6 +232,37 @@ export const Landing: React.FC = () => {
       <footer style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto', padding: '30px 24px 70px', borderTop: '2px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: fontSize('sm'), fontFamily: fonts.body }}>
         © 2026 Zeelink Thailand — แพลตฟอร์มพอร์ตโฟลิโอสำหรับคนไทย
       </footer>
+
+      {/* ===== Mood filter modal (interactive tag results) ===== */}
+      {activeMood && (
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setActiveMood(null)}>
+          <div
+            className="glass-card border-[var(--orange)] w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6 m-4"
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--glass-bg)' }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg flex items-center" style={{ color: 'var(--text-primary)' }}>
+                <span className="px-3 py-1 rounded-full bg-[var(--orange)]/20 text-[var(--orange)] text-sm mr-2">{activeMood}</span>
+                โปรไฟล์ที่เข้ากับอารมณ์นี้
+              </h3>
+              <button onClick={() => setActiveMood(null)} className="text-white/50 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {filterProfilesByMood(activeMood).map(p => (
+                <Link key={p.id} to={`/${p.username}`} className="glass-card p-3 flex flex-col items-center text-center hover:border-[var(--orange)] transition-colors" style={{ background: 'var(--bg-secondary)' }}>
+                  <img src={p.photoUrl} className="w-14 h-14 rounded-full object-cover border-2 border-white/20 mb-2" alt={p.displayName} />
+                  <span className="text-sm font-bold truncate w-full" style={{ color: 'var(--text-primary)' }}>{p.displayName}</span>
+                  <span className="text-[10px] opacity-60 truncate w-full">{p.province}</span>
+                </Link>
+              ))}
+            </div>
+            {filterProfilesByMood(activeMood).length === 0 && (
+              <p className="text-center text-sm opacity-60 py-8">ยังไม่มีโปรไฟล์ในขณะนี้ ลองคลิกแท็กอื่นดูสิ!</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
