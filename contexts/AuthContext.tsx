@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role } from '../types';
+import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role, AdminUserView, OnlineUser } from '../types';
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
 import { supabase } from './supabaseClient';
+
+// Realtime presence ใช้ ref ระดับ module เพื่อไม่ให้หายเมื่อ component re-render
+let presenceChannel: any = null;
+let presenceHeartbeat: any = null;
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +16,10 @@ interface AuthContextType {
   popups: SystemPopup[];
   questions: Question[];
   posts: Post[];
+
+  // Presence (ออนไลน์ realtime) + แอดมิน
+  onlineUsers: OnlineUser[];
+  allUsers: AdminUserView[];
 
   // Methods
   loadPosts: () => Promise<void>;
@@ -27,6 +35,8 @@ interface AuthContextType {
   toggleLike: (profileId: string) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   banUser: (userId: string) => Promise<void>;
+  unbanUser: (userId: string) => Promise<void>;
+  setUserRole: (userId: string, role: Role) => Promise<void>;
   simulateUsers: () => void;
   backupData: () => Promise<void>;
   createPopup: (popup: SystemPopup) => Promise<void>;
@@ -36,6 +46,7 @@ interface AuthContextType {
   addQuestion: (text: string) => Promise<Question>;
   voteQuestion: (questionId: string) => Promise<void>;
   askAiStylist: () => any;
+  loadAllUsers: () => Promise<AdminUserView[]>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -147,6 +158,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [popups, setPopups] = useState<SystemPopup[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [allUsers, setAllUsers] = useState<AdminUserView[]>([]);
 
   // โหลด user+profile จากอีเมล (RLS อนุญาต authenticated อ่านแถวตัวเอง)
   const loadUserByEmail = async (email: string): Promise<User | null> => {
@@ -368,6 +381,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUsersList(prev => prev.map(p => p.userId === userId ? { ...p, isBanned: true } : p));
     } catch (error) {
       console.error('Ban user error:', error);
+    }
+  };
+
+  // แอดมินเลื่อน/ถอนสิทธิ์ (ต้องมี RLS admin — ดู supabase/admin-online.sql)
+  const setUserRole = async (userId: string, role: Role) => {
+    try {
+      const { error } = await supabase.from('users').update({ role }).eq('id', userId);
+      if (error) throw error;
+      setAllUsers(prev => prev.map(u => u.userId === userId ? { ...u, role } : u));
+    } catch (error) {
+      console.error('Set user role error:', error);
+      throw error;
+    }
+  };
+
+  const unbanUser = async (userId: string) => {
+    try {
+      const { error } = await supabase.from('users').update({ is_banned: false }).eq('id', userId);
+      if (error) throw error;
+      setUsersList(prev => prev.map(p => p.userId === userId ? { ...p, isBanned: false } : p));
+      setAllUsers(prev => prev.map(u => u.userId === userId ? { ...u, isBanned: false } : u));
+    } catch (error) {
+      console.error('Unban user error:', error);
     }
   };
 
@@ -668,6 +704,90 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return presets[Math.floor(Math.random() * presets.length)];
   };
 
+  // ===== Realtime Presence (ใครออนไลน์อยู่ตอนนี้) =====
+  // channel เดียวกัน 'zeelink-online' ทุกคน track ตัวเอง แอดมินอ่านได้ realtime
+  const touchPresence = async () => {
+    // อัปเดต last_seen_at (ต้องรัน supabase/admin-online.sql ก่อน ไม่งั้นข้าม quietly)
+    try { await supabase.rpc('touch_presence'); } catch { /* ยังไม่มี SQL -> ไม่เป็นไร */ }
+  };
+
+  const startPresence = async (u: User) => {
+    if (!u || presenceChannel) return;
+    try {
+      const channel: any = supabase.channel('zeelink-online');
+      presenceChannel = channel;
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState() as Record<string, any[]>;
+          const list: OnlineUser[] = [];
+          Object.values(state).forEach((entries) => {
+            (entries || []).forEach((e) => list.push(e as OnlineUser));
+          });
+          setOnlineUsers(list);
+        })
+        .subscribe(async (status: string) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.track({
+              user_id: u.id, email: u.email, name: u.name,
+              photoUrl: u.photoUrl, online_at: new Date().toISOString()
+            });
+            touchPresence();
+          }
+        });
+      // heartbeat 30 วินาที (เผื่อรัน SQL แล้วจะได้ last_seen ใหม่เสมอ)
+      if (presenceHeartbeat) clearInterval(presenceHeartbeat);
+      presenceHeartbeat = setInterval(touchPresence, 30000);
+    } catch (err) {
+      console.error('startPresence error:', err);
+    }
+  };
+
+  const stopPresence = () => {
+    if (presenceHeartbeat) { clearInterval(presenceHeartbeat); presenceHeartbeat = null; }
+    if (presenceChannel) { try { supabase.removeChannel(presenceChannel); } catch { /* noop */ } presenceChannel = null; }
+    setOnlineUsers([]);
+  };
+
+  // แอดมินโหลดผู้ใช้ทั้งหมด (users + profiles รวมกัน)
+  const loadAllUsers = async (): Promise<AdminUserView[]> => {
+    try {
+      const { data: profiles } = await supabase.from('profiles').select('*');
+      const { data: users } = await supabase.from('users').select('id,email,name,role,is_banned');
+      const usersById = new Map((users || []).map((u: any) => [u.id, u]));
+      const merged: AdminUserView[] = (profiles || []).map((p: any) => {
+        const u = usersById.get(p.user_id) || {};
+        return {
+          id: p.id, userId: p.user_id, email: u.email || '', name: u.name || p.display_name || '',
+          displayName: p.display_name || '', photoUrl: p.photo_url || '', username: p.username,
+          role: (u.role as Role) || 'user', isBanned: !!u.is_banned,
+          showOnExplore: !!p.show_on_explore, lastSeen: p.last_seen_at || null, createdAt: p.created_at
+        };
+      });
+      // ผู้ใช้ที่มีใน users แต่ยังไม่มี profile
+      (users || []).forEach((u: any) => {
+        if (!merged.find((m) => m.userId === u.id)) {
+          merged.push({
+            id: '', userId: u.id, email: u.email || '', name: u.name || '', displayName: u.name || '',
+            photoUrl: '', username: '', role: (u.role as Role) || 'user', isBanned: !!u.is_banned,
+            showOnExplore: false, lastSeen: null, createdAt: ''
+          });
+        }
+      });
+      setAllUsers(merged);
+      return merged;
+    } catch (err) {
+      console.error('loadAllUsers error:', err);
+      return [];
+    }
+  };
+
+  // เมื่อผู้ใช้ล็อกอิน/ล็อกเอาต์ → เริ่ม/หยุด track สถานะออนไลน์
+  useEffect(() => {
+    if (user) startPresence(user);
+    else stopPresence();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   // Initialize: sync auth session + load public data
   useEffect(() => {
     const initializeData = async () => {
@@ -768,10 +888,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user, profile, usersList, isLoading, activePopup, popups, questions, posts,
-    login, loginWithOAuth, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser,
-    simulateUsers, backupData, createPopup, togglePopup, deletePopup,
+    onlineUsers, allUsers,
+    login, loginWithOAuth, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser, unbanUser,
+    setUserRole, simulateUsers, backupData, createPopup, togglePopup, deletePopup,
     closeActivePopup, addQuestion, voteQuestion, askAiStylist,
-    loadPosts, createPost, toggleLikePost, addComment
+    loadPosts, createPost, toggleLikePost, addComment, loadAllUsers
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

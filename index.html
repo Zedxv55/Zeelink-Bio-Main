@@ -359,13 +359,15 @@
         50% { transform: translateY(-6px); opacity: 1; }
       }
 
-      /* ข้อความลอยขึ้นลงบนหน้า Login */
+      /* ข้อความลอยเด้งไปมาแนวตั้ง+แนวนอนบนหน้า Login (ใช้ --dx สำหรับเลื่อนข้าง) */
       @keyframes bobUpDown {
-        0%   { transform: translateY(8px); opacity: 0; }
-        15%  { opacity: 0.85; }
-        50%  { transform: translateY(-22px); opacity: 1; }
-        85%  { opacity: 0.85; }
-        100% { transform: translateY(8px); opacity: 0; }
+        0%   { transform: translate(var(--dx, 0), 10px) rotate(-3deg); opacity: 0; }
+        12%  { opacity: 0.9; }
+        30%  { transform: translate(calc(var(--dx, 0px) * -0.5), -18px) rotate(2deg); }
+        50%  { transform: translate(var(--dx, 0), -30px) rotate(-2deg); opacity: 1; }
+        70%  { transform: translate(calc(var(--dx, 0px) * -0.4), -14px) rotate(3deg); }
+        88%  { opacity: 0.9; }
+        100% { transform: translate(var(--dx, 0), 10px) rotate(-3deg); opacity: 0; }
       }
       @media (prefers-reduced-motion: reduce){
         [style*="mascotBob"], [style*="mascotFloat"]{ animation: none !important; }

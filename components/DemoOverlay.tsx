@@ -7,9 +7,9 @@ interface DemoOverlayProps {
   subtitle?: string;
 }
 
-// ===== Demo/Preview mode overlay for unauthenticated users =====
-// Shows a blurred "preview" of the feature with a login CTA.
-// No private data is shown — only the concept/UI is revealed.
+// ===== Auth gate overlay for unauthenticated users =====
+// Blurs the feature preview behind a login CTA.
+// นี่คือ "ประตูล็อกอิน" (auth gate) ไม่ใช่โหมด demo — ระบบทั้งหมดต่อฐานข้อมูลจริงแล้ว
 export const DemoOverlay: React.FC<DemoOverlayProps> = ({
   title = 'ล็อกอินเพื่อเริ่มต้นสร้างพอร์ต',
   subtitle = 'และเปิดใช้งานฟีเจอร์จริงของคุณ'
@@ -44,7 +44,7 @@ export const DemoOverlay: React.FC<DemoOverlayProps> = ({
 
         <div className="flex items-center justify-center mt-4 text-[11px] opacity-50">
           <Sparkles size={12} className="mr-1 text-[var(--yellow)]" />
-          นี้คือโหมดตัวอย่าง — ข้อมูลทั้งหมดเป็น Mock Data
+          เข้าสู่ระบบเพื่อใช้งานระบบจริง (ต่อฐานข้อมูล Supabase แล้ว)
         </div>
       </div>
     </div>

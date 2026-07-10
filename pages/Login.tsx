@@ -20,11 +20,14 @@ const GoogleIcon: React.FC = () => (
 
 type Mode = 'login' | 'register' | 'forgot' | 'setpw';
 
-// ตำแหน่งข้อความลอย (คอลัมน์/แถว สัดส่วนหน้าจอ)
+// ตำแหน่งข้อความลอย (คอลัมน์/แถว สัดส่วนหน้าจอ) — กระจายเต็มจอให้เด้งไปมา
 const FLOAT_POS = [
-  { top: '14%', left: '8%', dur: 7 }, { top: '22%', right: '10%', dur: 9 },
-  { top: '46%', left: '6%', dur: 8 }, { top: '62%', right: '8%', dur: 10 },
-  { top: '78%', left: '12%', dur: 8.5 }, { top: '34%', right: '14%', dur: 9.5 },
+  { top: '12%', left: '7%',  dur: 7,  dx: 14 }, { top: '20%', right: '9%',  dur: 9,  dx: -18 },
+  { top: '34%', left: '5%',  dur: 8,  dx: 20 }, { top: '44%', right: '7%',  dur: 10, dx: -12 },
+  { top: '58%', left: '10%', dur: 8.5, dx: 16 }, { top: '63%', right: '11%', dur: 9.5, dx: -22 },
+  { top: '76%', left: '6%',  dur: 7.5, dx: 12 }, { top: '82%', right: '8%',  dur: 11, dx: -16 },
+  { top: '28%', left: '46%', dur: 9,  dx: 10 }, { top: '70%', left: '42%', dur: 8, dx: -14 },
+  { top: '16%', left: '52%', dur: 10, dx: 18 }, { top: '88%', left: '30%', dur: 9, dx: -10 },
 ];
 
 export const Login: React.FC = () => {
@@ -107,7 +110,7 @@ export const Login: React.FC = () => {
     <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
       <ThaiBackground />
 
-      {/* ข้อความลอยขึ้นลง (ช้างกูอยู่ไหน ฯลฯ) — ตาม Blueprint N2: อนิเมชั่นมีชีวิตชีวา ไม่หน่วง */}
+      {/* ข้อความลอยเด้งไปมา (คำกวนๆ ช้างกูอยู่ไหน ฯลฯ) — ชีวิตชีวา ไม่หน่วง */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {FLOAT_POS.map((p, i) => (
           <span
@@ -118,6 +121,7 @@ export const Login: React.FC = () => {
               color: 'var(--text-muted)',
               textShadow: '0 0 12px var(--orange-soft)',
               opacity: 0,
+              ['--dx' as any]: `${p.dx}px`,
               animation: `bobUpDown ${p.dur}s ease-in-out ${i * 1.3}s infinite`
             }}
           >

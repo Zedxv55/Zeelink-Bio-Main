@@ -66,6 +66,32 @@ export interface Profile {
 
 export type QuestionStatus = 'approved' | 'rejected' | 'pending';
 
+// ===== Admin / Presence =====
+// ข้อมูลผู้ใช้ที่แอดมินดู (รวม users + profiles)
+export interface AdminUserView {
+  id: string;          // profile.id
+  userId: string;      // users.id (เอาไปใช้ลบ/แบน/เปลี่ยนสิทธิ์)
+  email: string;
+  name: string;
+  displayName: string;
+  photoUrl: string;
+  username: string;
+  role: Role;
+  isBanned: boolean;
+  showOnExplore: boolean;
+  lastSeen?: string | null;   // จาก profiles.last_seen_at (ถ้ารัน SQL แล้ว)
+  createdAt?: string;
+}
+
+// สถานะออนไลน์แบบ realtime (Supabase Realtime Presence)
+export interface OnlineUser {
+  user_id: string;
+  email: string;
+  name: string;
+  photoUrl: string;
+  online_at: string;
+}
+
 export interface Question {
   id: string;
   userId: string;
