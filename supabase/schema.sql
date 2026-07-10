@@ -66,22 +66,58 @@ create table if not exists public.popups (
   created_at timestamptz not null default now()
 );
 
+-- เพิ่มพิกัด (แชร์ตำแหน่งเรียลไทม์) ใน profiles
+alter table public.profiles add column if not exists lat double precision;
+alter table public.profiles add column if not exists lng double precision;
+
+-- ============ FEED (โพสต์แบบ Facebook) ============
+create table if not exists public.posts (
+  id uuid primary key default gen_random_uuid(),
+  user_id text,
+  username text,
+  display_name text,
+  photo_url text,
+  text text,
+  media_url text,
+  media_type text not null default 'none' check (media_type in ('none', 'image', 'video')),
+  likes integer not null default 0,
+  liked_users text[] not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.post_comments (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid references public.posts(id) on delete cascade,
+  user_id text,
+  username text,
+  display_name text,
+  photo_url text,
+  text text not null,
+  created_at timestamptz not null default now()
+);
+
 -- ============ INDEXES ============
 create index if not exists idx_profiles_show_on_explore on public.profiles (show_on_explore);
 create index if not exists idx_questions_status on public.questions (status);
 create index if not exists idx_popups_is_active on public.popups (is_active);
+create index if not exists idx_posts_created_at on public.posts (created_at desc);
+create index if not exists idx_post_comments_post_id on public.post_comments (post_id);
 
 -- ============ ROW LEVEL SECURITY ============
 alter table public.users enable row level security;
 alter table public.profiles enable row level security;
 alter table public.questions enable row level security;
 alter table public.popups enable row level security;
+alter table public.posts enable row level security;
+alter table public.post_comments enable row level security;
 
 -- เปิดกว้างสำหรับ anon (ชั่วคราว จนกว่าจะเพิ่ม Supabase Auth)
 create policy "anon all users" on public.users for all to anon using (true) with check (true);
 create policy "anon all profiles" on public.profiles for all to anon using (true) with check (true);
 create policy "anon all questions" on public.questions for all to anon using (true) with check (true);
 create policy "anon all popups" on public.popups for all to anon using (true) with check (true);
+create policy "anon all posts" on public.posts for all to anon using (true) with check (true);
+create policy "anon all post_comments" on public.post_comments for all to anon using (true) with check (true);
 
 -- ============ STORAGE (backups) ============
 insert into storage.buckets (id, name, public)

@@ -50,6 +50,8 @@ export interface Profile {
   district: string; // Type in
   subDistrict: string; // Type in
   postalCode: string; // Auto
+  lat: number; // พิกัดละติจูด (แชร์ตำแหน่งเรียลไทม์)
+  lng: number; // พิกัดลองจิจูด
   
   // Features
   showOnExplore: boolean;
@@ -101,5 +103,34 @@ export interface Region {
   id: number;
   name: string;
   provinces: Province[];
+}
+
+// ===== Feed (โพสต์แบบ Facebook) =====
+export type PostMediaType = 'none' | 'image' | 'video';
+
+export interface PostComment {
+  id: string;
+  postId: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  photoUrl: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface Post {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  photoUrl: string;
+  text: string;
+  mediaUrl?: string;
+  mediaType: PostMediaType;
+  likes: number;
+  likedByMe: boolean;
+  comments: PostComment[];
+  createdAt: string;
 }
 

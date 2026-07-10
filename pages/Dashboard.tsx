@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { THAI_REGIONS, AVAILABLE_FONTS } from '../constants';
 import { Link, Profile, ThemeConfig } from '../types';
-import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon, GripVertical, LocateFixed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
 import { DemoOverlay } from '../components/DemoOverlay';
 import { supabase } from '../contexts/supabaseClient';
 import { detectPlatform, isValidUrl } from '../lib/social';
+import L from 'leaflet';
 
 // ===== Image gallery limits (Security: client-side hard cap) =====
 // DB scale supports up to 100; regular users capped at 15 in this version
@@ -44,6 +45,8 @@ export const Dashboard: React.FC = () => {
   const [district, setDistrict] = useState('');
   const [subDistrict, setSubDistrict] = useState('');
   const [postalCode, setPostalCode] = useState('');
+  const [lat, setLat] = useState(0);
+  const [lng, setLng] = useState(0);
 
   // Advanced Design State
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>({
@@ -66,6 +69,59 @@ export const Dashboard: React.FC = () => {
   const [isNewUser, setIsNewUser] = useState(true);
   const [shareLink, setShareLink] = useState('');
 
+  // ===== แผนที่ (Leaflet) + แชร์ตำแหน่งเรียลไทม์ =====
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  const getProvinceLatLng = (): { lat: number; lng: number } => {
+    if (lat && lng) return { lat, lng };
+    const prov = THAI_REGIONS.find(r => r.name === region)?.provinces.find(p => p.name === province);
+    return prov ? { lat: prov.lat, lng: prov.lng } : { lat: 13.7563, lng: 100.5018 };
+  };
+
+  // สร้างแผนที่ครั้งเดียว
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+    const { lat: la, lng: ln } = getProvinceLatLng();
+    const map = L.map(mapContainerRef.current, { zoomControl: true, attributionControl: false })
+      .setView([la, ln], province ? 11 : 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // เลื่อนแผนที่ตามจังหวัด/พิกัดที่เลือก
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const { lat: la, lng: ln } = getProvinceLatLng();
+    mapRef.current.flyTo([la, ln], province ? 11 : 6, { animate: true });
+    if (markerRef.current) { markerRef.current.remove(); markerRef.current = null; }
+    if (lat && lng) {
+      markerRef.current = L.marker([lat, lng]).addTo(mapRef.current)
+        .bindPopup('📍 ตำแหน่งของคุณ');
+    }
+    setTimeout(() => mapRef.current?.invalidateSize(), 200);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [province, lat, lng]);
+
+  // แชร์ตำแหน่งปัจจุบัน (geolocation เรียลไทม์)
+  const shareLiveLocation = () => {
+    if (!navigator.geolocation) { setGeoError('เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง'); return; }
+    setGeoLoading(true); setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude); setLng(pos.coords.longitude);
+        setGeoLoading(false);
+      },
+      (err) => { setGeoError(err.code === 1 ? 'คุณปฏิเสธการแชร์ตำแหน่ง' : 'ไม่สามารถระบุตำแหน่งได้'); setGeoLoading(false); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   // Derived location data
   const selectedRegionData = THAI_REGIONS.find(r => r.name === region);
 
@@ -82,6 +138,8 @@ export const Dashboard: React.FC = () => {
       setDistrict(profile.district || '');
       setSubDistrict(profile.subDistrict || '');
       setPostalCode(profile.postalCode || '');
+      setLat(profile.lat || 0);
+      setLng(profile.lng || 0);
 
       setShowOnExplore(profile.showOnExplore);
       setLinks(profile.links || []);
@@ -218,6 +276,8 @@ export const Dashboard: React.FC = () => {
       district,
       subDistrict,
       postalCode,
+      lat,
+      lng,
       tags: profile?.tags || [],
       portfolioImages, // Save gallery
       showOnExplore,
@@ -391,14 +451,29 @@ export const Dashboard: React.FC = () => {
 
                       <div className="glass-card p-6 space-y-4 border-green">
                           <h3 className="font-bold flex items-center"><MapPin className="mr-2 text-green-500"/> ที่อยู่ (สำหรับแสดงผล Online)</h3>
-                          <select value={region} onChange={e => setRegion(e.target.value)} className="w-full p-3 rounded-lg"><option value="">เลือกภูมิภาค</option>{THAI_REGIONS.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}</select>
                           <div className="grid grid-cols-2 gap-4">
-                              <select value={province} onChange={e => setProvince(e.target.value)} disabled={!region} className="w-full p-3 rounded-lg"><option value="">เลือกจังหวัด</option>{selectedRegionData?.provinces.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select>
-                              <input value={district} onChange={e => setDistrict(e.target.value)} placeholder="อำเภอ (พิมพ์เอง)" className="w-full p-3 rounded-lg" />
+                            <select value={region} onChange={e => setRegion(e.target.value)} className="w-full p-3 rounded-lg"><option value="">เลือกภูมิภาค</option>{THAI_REGIONS.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}</select>
+                            <select value={province} onChange={e => setProvince(e.target.value)} disabled={!region} className="w-full p-3 rounded-lg"><option value="">เลือกจังหวัด</option>{selectedRegionData?.provinces.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
+                              <input value={district} onChange={e => setDistrict(e.target.value)} placeholder="อำเภอ (พิมพ์เอง)" className="w-full p-3 rounded-lg" />
                               <input value={subDistrict} onChange={e => setSubDistrict(e.target.value)} placeholder="ตำบล (พิมพ์เอง)" className="w-full p-3 rounded-lg" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
                               <input value={postalCode} readOnly placeholder="รหัสไปรษณีย์ (ออโต้)" className="w-full p-3 rounded-lg opacity-70" />
+                              <input value={lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : ''} readOnly placeholder="พิกัด (แชร์ตำแหน่ง)" className="w-full p-3 rounded-lg opacity-70" />
+                          </div>
+
+                          {/* แผนที่ + แชร์ตำแหน่งเรียลไทม์ */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-bold">🗺️ แผนที่ตำแหน่ง</span>
+                              <button onClick={shareLiveLocation} disabled={geoLoading || !user} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[var(--green)] text-white hover:opacity-90 disabled:opacity-50 flex items-center gap-1">
+                                {geoLoading ? 'กำลังระบุ...' : <><LocateFixed size={13} /> แชร์ตำแหน่งปัจจุบัน</>}
+                              </button>
+                            </div>
+                            <div ref={mapContainerRef} className="w-full h-56 rounded-xl overflow-hidden border border-white/10 z-0" style={{ background: '#aadaff' }} />
+                            {geoError && <p className="text-[11px] text-red-400 mt-1">{geoError}</p>}
                           </div>
 
                           <div className="flex items-center justify-between p-4 bg-black/10 rounded-lg mt-4">

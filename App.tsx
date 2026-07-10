@@ -5,6 +5,7 @@ import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Explore } from './pages/Explore';
 import { Vote } from './pages/Vote';
+import { Feed } from './pages/Feed';
 import { ProfilePage } from './pages/Profile';
 import { Login } from './pages/Login';
 import { AdminPanel } from './pages/AdminPanel';
@@ -37,6 +38,7 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/feed" element={<Feed />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/vote" element={<Vote />} />
         <Route path="/:username" element={<ProfilePage />} />

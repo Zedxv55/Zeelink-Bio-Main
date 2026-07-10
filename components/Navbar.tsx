@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Home, User, Map, Vote, LogOut, Sun, Moon, Menu, X } from 'lucide-react';
+import { Home, User, Map, Vote, Newspaper, LogOut, Sun, Moon, Menu, X } from 'lucide-react';
 import { Logo } from './Logo';
 import { Button } from './ui/Button';
 import { fonts, fontSize, spacing } from '../lib/designTokens';
@@ -35,8 +35,11 @@ export const Navbar: React.FC = () => {
             </Link>
             {user && (
               <>
+                <Link to="/feed" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
+                  <Newspaper size={16} className="mr-2" /> ฟีด
+                </Link>
                 <Link to="/dashboard" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
-                  <User size={16} className="mr-2" /> Dashboard
+                  <User size={16} className="mr-2" /> แดชบอร์ด
                 </Link>
                 <Link to="/explore" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
                   <Map size={16} className="mr-2" /> แผนที่
@@ -105,8 +108,11 @@ export const Navbar: React.FC = () => {
 
               {user && (
                 <>
+                  <Link to="/feed" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center" style={{ fontSize: fontSize('base') }}>
+                    <Newspaper size={18} className="mr-3" /> ฟีด
+                  </Link>
                   <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center" style={{ fontSize: fontSize('base') }}>
-                    <User size={18} className="mr-3" /> Dashboard
+                    <User size={18} className="mr-3" /> แดชบอร์ด
                   </Link>
                   <Link to="/explore" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center" style={{ fontSize: fontSize('base') }}>
                     <Map size={18} className="mr-3" /> แผนที่

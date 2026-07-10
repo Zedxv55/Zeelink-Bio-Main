@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Profile } from '../types';
 import { ThaiBackground } from '../components/ThaiBackground';
+import { PixelMascot } from '../components/PixelMascot';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { fonts, fontSize, lineHeight, spacing, layout } from '../lib/designTokens';
@@ -68,6 +69,24 @@ export const Landing: React.FC = () => {
   // ===== Interactive tag → filter profiles by mood (simulated) =====
   const [activeMood, setActiveMood] = useState<string | null>(null);
 
+  // Scroll-reveal: เลือนส่วนต่าง ๆ เข้ามาตอนเลื่อนถึง (อนิเมชั่นมีหน้าที่ = ชี้นำความสนใจ ตาม Blueprint N2)
+  const landingRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = landingRef.current;
+    if (!root) return;
+    const items = root.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          (e.target as HTMLElement).classList.add('in');
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    items.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
   const filterProfilesByMood = (mood: string): Profile[] => {
     const kw = mood.toLowerCase();
     const matched = usersList.filter(u =>
@@ -84,7 +103,9 @@ export const Landing: React.FC = () => {
   };
 
   return (
-    <div className="pixel-landing">
+    <div className="pixel-landing" ref={landingRef}>
+      {/* Pixel Mascot — ตัวการ์ตูนพิกเซลขับตามเมาส์ */}
+      <PixelMascot />
       {/* ===== Interactive floating phrases (clickable filter tags) ===== */}
       <ThaiBackground onTagClick={setActiveMood} />
 
@@ -95,7 +116,7 @@ export const Landing: React.FC = () => {
       <span className="float-deco" style={{ top: '70%', right: '8%', animationDelay: '1.5s' }}>🗺️</span>
 
       {/* ===== HERO (โฆษณา) ===== */}
-      <header className="px-6 pt-28 pb-12" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
+      <header className="px-6 pt-28 pb-12 reveal in" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
         <p className="pixel-tag" style={{ marginBottom: spacing.md, fontFamily: fonts.mono, fontSize: fontSize('sm'), letterSpacing: '0.12em', color: 'var(--blueprint)' }}>THAI CREATOR PLATFORM</p>
         <h1 className="pixel-h1" style={{ marginBottom: spacing.lg, fontFamily: fonts.pixel, fontSize: 'clamp(34px, 7vw, 64px)', lineHeight: lineHeight.tight, color: 'var(--text-primary)', textShadow: `0 0 16px var(--orange-soft), 4px 4px 0 var(--orange)` }}>
           ZEELINK
@@ -125,7 +146,7 @@ export const Landing: React.FC = () => {
       </header>
 
       {/* ===== PIXEL MAP (แผนที่ไทย animation) ===== */}
-      <section className="px-6 py-10" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
+      <section className="px-6 py-10 reveal" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div className="pixel-map-wrap">
             <div className="pixel-map" style={{ gridTemplateColumns: `repeat(20, ${CELL}px)` }}>
@@ -158,7 +179,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ===== HOW IT WORKS (ฟังก์ชันการใช้) ===== */}
-      <section className="px-6 py-10" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
+      <section className="px-6 py-10 reveal" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
         <p className="pixel-tag" style={{ marginBottom: spacing.md, fontFamily: fonts.mono, fontSize: fontSize('sm'), color: 'var(--blueprint)' }}>HOW IT WORKS</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {STEPS.map((s, i) => (
@@ -174,7 +195,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ===== PROPOSED PORTFOLIO (พอร์ตที่เสนอ) ===== */}
-      <section className="px-6 py-10" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
+      <section className="px-6 py-10 reveal" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto' }}>
         <p className="pixel-tag" style={{ marginBottom: spacing.sm, fontFamily: fonts.mono, fontSize: fontSize('sm'), color: 'var(--blueprint)' }}>YOUR PORTFOLIO</p>
         <h2 className="pixel-font" style={{ fontFamily: fonts.pixel, fontSize: '20px', color: 'var(--text-primary)', marginBottom: spacing.xs, lineHeight: lineHeight.tight }}>
           นี่คือพอร์ตที่คุณจะได้
@@ -213,7 +234,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ===== FINAL CTA ===== */}
-      <section className="px-6 py-14" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto', textAlign: 'center' }}>
+      <section className="px-6 py-14 reveal" style={{ maxWidth: Number(layout.maxWidth.replace('px', '')), margin: '0 auto', textAlign: 'center' }}>
         <h2 className="pixel-font" style={{ fontFamily: fonts.pixel, fontSize: '24px', color: 'var(--text-primary)', marginBottom: spacing.lg, lineHeight: lineHeight.tight }}>
           พร้อมสร้างบ้าน<br />ของคนไทยแล้ว?
         </h2>

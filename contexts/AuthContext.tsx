@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Profile, SystemPopup, Question, Role } from '../types';
+import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role } from '../types';
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
 import { supabase } from './supabaseClient';
 
@@ -11,8 +11,13 @@ interface AuthContextType {
   activePopup: SystemPopup | null;
   popups: SystemPopup[];
   questions: Question[];
+  posts: Post[];
 
   // Methods
+  loadPosts: () => Promise<void>;
+  createPost: (text: string, mediaUrl?: string, mediaType?: 'none' | 'image' | 'video') => Promise<Post | null>;
+  toggleLikePost: (postId: string) => Promise<void>;
+  addComment: (postId: string, text: string) => Promise<void>;
   login: (email: string, password: string, remember?: boolean) => Promise<{ user: User | null; error?: string }>;
   loginWithOAuth: (provider: 'google' | 'facebook') => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<{ user: User | null; needsConfirmation?: boolean }>;
@@ -72,6 +77,8 @@ const mapProfile = (p: any): Profile => ({
   district: p.district,
   subDistrict: p.sub_district,
   postalCode: p.postal_code,
+  lat: p.lat || 0,
+  lng: p.lng || 0,
   showOnExplore: p.show_on_explore,
   likes: p.likes || 0,
   views: p.views || 0,
@@ -139,6 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [activePopup, setActivePopup] = useState<SystemPopup | null>(null);
   const [popups, setPopups] = useState<SystemPopup[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
 
   // โหลด user+profile จากอีเมล (RLS อนุญาต authenticated อ่านแถวตัวเอง)
   const loadUserByEmail = async (email: string): Promise<User | null> => {
@@ -203,7 +211,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<User | null> => {
+  const register = async (email: string, password: string, name: string): Promise<{ user: User | null; needsConfirmation?: boolean }> => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -289,6 +297,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           district: newProfile.district,
           sub_district: newProfile.subDistrict,
           postal_code: newProfile.postalCode,
+          lat: newProfile.lat || null,
+          lng: newProfile.lng || null,
           show_on_explore: newProfile.showOnExplore,
           theme_config: newProfile.themeConfig,
           links: newProfile.links,
@@ -439,8 +449,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const addQuestion = async (text: string): Promise<Question> => {
+    // ประกาศนอก try เพื่อให้ catch block เข้าถึงได้ (แก้ ReferenceError เดิม)
+    const hasBannedWord = BANNED_WORDS.some(word => text.toLowerCase().includes(word.toLowerCase()));
     try {
-      const hasBannedWord = BANNED_WORDS.some(word => text.toLowerCase().includes(word.toLowerCase()));
       const newQuestion = {
         user_id: user?.id || 'anonymous',
         username: user?.name || 'anonymous',
@@ -493,6 +504,159 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           : q
       ));
     }
+  };
+
+  // ===== Feed (โพสต์แบบ Facebook) =====
+  const loadPosts = async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, post_comments(*)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const mapped: Post[] = data.map((p: any) => ({
+          id: p.id,
+          userId: p.user_id,
+          username: p.username,
+          displayName: p.display_name,
+          photoUrl: p.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.display_name || p.username)}&background=random`,
+          text: p.text,
+          mediaUrl: p.media_url,
+          mediaType: p.media_type || 'none',
+          likes: p.likes || 0,
+          likedByMe: user ? (p.liked_users || []).includes(user.id) : false,
+          comments: (p.post_comments || []).map((c: any) => ({
+            id: c.id, postId: c.post_id, userId: c.user_id, username: c.username,
+            displayName: c.display_name, photoUrl: c.photo_url, text: c.text, createdAt: c.created_at
+          })),
+          createdAt: p.created_at
+        }));
+        setPosts(mapped);
+        return;
+      }
+    } catch (error) {
+      console.error('Load posts error:', error);
+    }
+    // Fallback: โพสต์จำลอง (demo / ยังไม่มีข้อมูลใน DB)
+    const now = Date.now();
+    setPosts([
+      {
+        id: 'seed-1', userId: 'seed-1', username: 'zeelink', displayName: 'ทีมงาน Zeelink',
+        photoUrl: 'https://ui-avatars.com/api/?name=Zeelink&background=FF7A2F&color=fff',
+        text: 'ยินดีต้อนรับสู่ฟีดของ Zeelink! 🎉 ที่นี่คุณสามารถแชร์ผลงาน โพสต์ หรือวิดีโอได้เหมือนในโซเชียล แต่จุดประสงค์คือโชว์พอร์ตของคนไทย #คนไทยไม่แพ้ใคร',
+        mediaType: 'none', likes: 128, likedByMe: false, comments: [
+          { id: 'c1', postId: 'seed-1', userId: 'u1', username: 'somchai', displayName: 'สมชาย', photoUrl: 'https://ui-avatars.com/api/?name=สมชาย&background=random', text: 'เจ๋งมากครับ!', createdAt: new Date(now - 3600000).toISOString() }
+        ], createdAt: new Date(now - 7200000).toISOString()
+      },
+      {
+        id: 'seed-2', userId: 'seed-2', username: 'malee.art', displayName: 'มาลี วาดรูป',
+        photoUrl: 'https://ui-avatars.com/api/?name=มาลี&background=random',
+        text: 'แชร์ผลงานวาดรูปล่าสุดของฉัน ✏️ รับจ้างออกแบบได้นะ 💌',
+        mediaUrl: 'https://picsum.photos/seed/zeelinkart/600/400', mediaType: 'image',
+        likes: 86, likedByMe: false, comments: [], createdAt: new Date(now - 1800000).toISOString()
+      },
+      {
+        id: 'seed-3', userId: 'seed-3', username: 'totdev', displayName: 'โต้ง สอนโค้ด',
+        photoUrl: 'https://ui-avatars.com/api/?name=โต้ง&background=random',
+        text: 'คลิปสอนฟรี: สร้างพอร์ตเว็บด้วย React ภายใน 10 นาที 🚀',
+        mediaUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', mediaType: 'video',
+        likes: 54, likedByMe: false, comments: [], createdAt: new Date(now - 600000).toISOString()
+      }
+    ]);
+  };
+
+  const createPost = async (text: string, mediaUrl?: string, mediaType: 'none' | 'image' | 'video' = 'none'): Promise<Post | null> => {
+    if (!user) return null;
+    const newPost: Post = {
+      id: `local-${Date.now()}`,
+      userId: user.id,
+      username: profile?.username || user.email.split('@')[0],
+      displayName: profile?.displayName || user.name,
+      photoUrl: profile?.photoUrl || user.photoUrl,
+      text,
+      mediaUrl,
+      mediaType,
+      likes: 0,
+      likedByMe: false,
+      comments: [],
+      createdAt: new Date().toISOString()
+    };
+    try {
+      const { data, error } = await supabase.from('posts').insert([{
+        user_id: user.id,
+        username: newPost.username,
+        display_name: newPost.displayName,
+        photo_url: newPost.photoUrl,
+        text,
+        media_url: mediaUrl || null,
+        media_type: mediaType,
+        likes: 0,
+        liked_users: []
+      }]).select().single();
+      if (error) throw error;
+      if (data) {
+        newPost.id = data.id;
+        newPost.createdAt = data.created_at;
+      }
+    } catch (error) {
+      console.error('Create post error:', error);
+    }
+    setPosts(prev => [newPost, ...prev]);
+    return newPost;
+  };
+
+  const toggleLikePost = async (postId: string): Promise<void> => {
+    // อัปเดต UI ทันที (optimistic)
+    setPosts(prev => prev.map(p =>
+      p.id === postId
+        ? { ...p, likedByMe: !p.likedByMe, likes: p.likes + (p.likedByMe ? -1 : 1) }
+        : p
+    ));
+    if (!user) return;
+    try {
+      // ใน DB ใช้ RPC หรือ update ผ่าน liked_users — ทำแบบง่าย: โหลด แล้ว +/-
+      const { data } = await supabase.from('posts').select('likes, liked_users').eq('id', postId).single();
+      if (data) {
+        const likedUsers: string[] = data.liked_users || [];
+        const has = likedUsers.includes(user.id);
+        const next = has ? likedUsers.filter(id => id !== user.id) : [...likedUsers, user.id];
+        await supabase.from('posts').update({ likes: (data.likes || 0) + (has ? -1 : 1), liked_users: next }).eq('id', postId);
+      }
+    } catch (error) {
+      console.error('Like post error:', error);
+    }
+  };
+
+  const addComment = async (postId: string, text: string): Promise<void> => {
+    const comment: PostComment = {
+      id: `local-${Date.now()}`,
+      postId,
+      userId: user?.id || 'anon',
+      username: user?.name || 'anonymous',
+      displayName: user?.name || 'ผู้เยี่ยมชม',
+      photoUrl: user?.photoUrl || 'https://ui-avatars.com/api/?name=Guest&background=random',
+      text,
+      createdAt: new Date().toISOString()
+    };
+    try {
+      const { data, error } = await supabase.from('post_comments').insert([{
+        post_id: postId,
+        user_id: comment.userId,
+        username: comment.username,
+        display_name: comment.displayName,
+        photo_url: comment.photoUrl,
+        text
+      }]).select().single();
+      if (!error && data) comment.id = data.id;
+      else if (error) console.error('Add comment error:', error);
+    } catch (error) {
+      console.error('Add comment error:', error);
+    }
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, comments: [...p.comments, comment] } : p
+    ));
   };
 
   const askAiStylist = () => {
@@ -552,6 +716,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setPopups([initialPopup]);
         }
 
+        // 5. Feed posts
+        await loadPosts();
+
         if (usersList.length === 0) simulateUsers();
       } catch (error) {
         console.error('Initialization error:', error);
@@ -600,10 +767,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const value: AuthContextType = {
-    user, profile, usersList, isLoading, activePopup, popups, questions,
+    user, profile, usersList, isLoading, activePopup, popups, questions, posts,
     login, loginWithOAuth, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser,
     simulateUsers, backupData, createPopup, togglePopup, deletePopup,
-    closeActivePopup, addQuestion, voteQuestion, askAiStylist
+    closeActivePopup, addQuestion, voteQuestion, askAiStylist,
+    loadPosts, createPost, toggleLikePost, addComment
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
