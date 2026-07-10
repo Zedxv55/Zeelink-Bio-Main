@@ -15,8 +15,8 @@ export const Vote: React.FC = () => {
     e.preventDefault();
     if (!newText.trim() || !user) return;
     const res = await addQuestion(newText);
-    if (res.status === 'approved') alert("ส่งคำถามสำเร็จ!");
-    else alert("คำถามไม่ผ่านการตรวจสอบ (พบคำหยาบคาย)");
+    if (res.status === 'rejected') alert('คำถามไม่ผ่านการตรวจสอบ (พบคำไม่เหมาะสม)');
+    else alert('✅ ส่งคำถามแล้ว รอแอดมินตรวจสอบก่อนแสดงผล');
     setNewText('');
   };
 

@@ -6,6 +6,34 @@ import { MapPin, Heart, Eye, Calendar, Map as MapIcon, Image as ImageIcon } from
 import { Button } from '../components/ui/Button';
 import { fonts, fontSize, palette } from '../lib/designTokens';
 import { detectPlatform, isValidUrl } from '../lib/social';
+import { supabase } from '../contexts/supabaseClient';
+
+// map แถวจาก DB (snake_case) เป็น Profile (camelCase) แบบเดียวกับ AuthContext
+const mapProfile = (p: any): ProfileType => ({
+  id: p.id,
+  userId: p.user_id,
+  uid: p.uid || '',
+  username: p.username,
+  displayName: p.display_name,
+  photoUrl: p.photo_url,
+  bio: p.bio,
+  tags: p.tags || [],
+  portfolioImages: p.portfolio_images || [],
+  region: p.region,
+  province: p.province,
+  district: p.district,
+  subDistrict: p.sub_district,
+  postalCode: p.postal_code,
+  lat: p.lat || 0,
+  lng: p.lng || 0,
+  showOnExplore: p.show_on_explore,
+  likes: p.likes || 0,
+  views: p.views || 0,
+  themeConfig: p.theme_config,
+  links: p.links || [],
+  createdAt: p.created_at,
+  updatedAt: p.updated_at
+});
 
 export const ProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>();
@@ -14,10 +42,41 @@ export const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const found = usersList.find(u => u.username === username);
-    if (found) setProfile(found);
-    setLoading(false);
+    let cancel = false;
+    (async () => {
+      setLoading(true);
+      const found = usersList.find(u => u.username === username);
+      if (found) { setProfile(found); setLoading(false); return; }
+      const { data } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
+      if (!cancel) {
+        setProfile(data ? mapProfile(data) : null);
+        setLoading(false);
+      }
+    })();
+    return () => { cancel = true; };
   }, [username, usersList]);
+
+  // นับยอดเข้าชม (กันนับซ้ำต่อ session ด้วย sessionStorage ตาม username)
+  useEffect(() => {
+    if (!profile || !username) return;
+    const key = `zeelink_viewed_${username}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    (async () => {
+      try {
+        const { error } = await supabase.rpc('increment_view', { p_username: username });
+        if (error) {
+          // ไม่มี RPC → fallback update ธรรมดา
+          await supabase.from('profiles').update({ views: (profile.views || 0) + 1 }).eq('id', profile.id);
+        }
+      } catch {
+        try {
+          await supabase.from('profiles').update({ views: (profile.views || 0) + 1 }).eq('id', profile.id);
+        } catch { /* noop */ }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   if (loading) return <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)', color: 'var(--text-muted)', fontFamily: fonts.body, fontSize: fontSize('base') }}>Loading Zeelink...</div>;
   if (!profile) return <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: fonts.body, fontSize: fontSize('lg') }}>Profile not found</div>;
@@ -73,7 +132,7 @@ export const ProfilePage: React.FC = () => {
                        src={img}
                        alt={`result ${i + 1}`}
                        className="w-full h-28 object-cover rounded-xl border border-current/10 hover:scale-105 transition-transform cursor-pointer"
-                       onClick={() => window.open(img, '_blank')}
+                       onClick={() => window.open(img, '_blank', 'noopener,noreferrer')}
                      />
                    ))}
                  </div>

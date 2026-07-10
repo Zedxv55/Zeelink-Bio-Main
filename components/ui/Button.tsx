@@ -99,7 +99,7 @@ export const Button: React.FC<ButtonProps> = ({
       data-variant={variant}
       style={{ ...base, ...sizes[size], ...variants[variant], ...style }}
       onMouseEnter={(e) => { if (!isDisabled) Object.assign(e.currentTarget.style, hoverStyles[variant]); }}
-      onMouseLeave={(e) => { if (!isDisabled) Object.assign(e.currentTarget.style, variants[variant]); }}
+      onMouseLeave={(e) => { if (!isDisabled) Object.assign(e.currentTarget.style, { transform: 'translateY(0)', filter: 'none', boxShadow: variants[variant].boxShadow ?? 'none' }, variants[variant]); }}
       onMouseDown={(e) => { if (!isDisabled) e.currentTarget.style.transform = 'translateY(0)'; }}
       {...props}
     >

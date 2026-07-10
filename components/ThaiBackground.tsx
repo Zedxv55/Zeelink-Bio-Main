@@ -58,6 +58,12 @@ export const ThaiBackground: React.FC<ThaiBackgroundProps> = ({ onTagClick }) =>
         .glow-text {
           transition: text-shadow 2s ease;
         }
+        @media (prefers-reduced-motion: reduce) {
+          .glow-text {
+            opacity: 0.5 !important;
+            animation: none !important;
+          }
+        }
       `}</style>
 
       {words.map((word) => {

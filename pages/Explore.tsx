@@ -121,6 +121,16 @@ export const Explore: React.FC = () => {
       setRefreshCooldown(30);
   };
 
+  // กรองรายชื่อตามจังหวัด/อำเภอเดียวกับผู้ใช้
+  const filterBySameProvince = () => {
+      if (!userProfile?.province) return;
+      setSidebarUsers(usersList.filter(u => u.showOnExplore && u.province === userProfile.province).slice(0, 15));
+  };
+  const filterBySameDistrict = () => {
+      if (!userProfile?.district) return;
+      setSidebarUsers(usersList.filter(u => u.showOnExplore && u.district === userProfile.district).slice(0, 15));
+  };
+
   const getProfilePosition = (provinceName: string) => {
       for (const region of THAI_REGIONS) {
           const province = region.provinces.find(p => p.name === provinceName);
@@ -159,11 +169,7 @@ export const Explore: React.FC = () => {
     );
   };
 
-  // Auto-request on mount if logged in
-  useEffect(() => {
-    if (user && !userProvince) requestGeolocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // หมายเหตุ: ไม่ขอตำแหน่งอัตโนมัติแล้ว — จะขอเฉพาะเมื่อผู้ใช้กดปุ่ม "แชร์ตำแหน่ง" เท่านั้น
 
   const createMarkerIcon = (profile: Profile): Promise<string> => {
       return new Promise((resolve) => {
@@ -175,7 +181,7 @@ export const Explore: React.FC = () => {
               canvas.width = 80;
               canvas.height = 80;
               const ctx = canvas.getContext('2d');
-              if (!ctx) return;
+              if (!ctx) { resolve(canvas.toDataURL()); return; }
 
               // Draw ring
               ctx.beginPath();
@@ -309,6 +315,11 @@ export const Explore: React.FC = () => {
 
   const isDemo = !user;
 
+  // กรองตามช่องค้นหา (ชื่อ / จังหวัด / แท็ก)
+  const shown = search.trim()
+    ? sidebarUsers.filter(u => (u.displayName + ' ' + u.province + ' ' + (u.tags || []).join(' ')).toLowerCase().includes(search.toLowerCase()))
+    : sidebarUsers;
+
   return (
     <div className="h-screen pt-16 flex flex-col md:flex-row overflow-hidden relative">
       {showIntro && <IntroOverlay onComplete={() => setShowIntro(false)} />}
@@ -351,8 +362,8 @@ export const Explore: React.FC = () => {
           {refreshCooldown > 0 && <p className="text-[10px] text-gray-500 text-right">รีเฟรชได้ใน {refreshCooldown}s</p>}
 
           <div className="flex space-x-2">
-              <button className="flex-1 py-1.5 text-xs font-bold bg-[var(--orange)] text-white rounded-lg">📍 จังหวัดเดียวกัน</button>
-              <button className="flex-1 py-1.5 text-xs font-bold bg-gray-500/20 text-gray-500 rounded-lg">อำเภอเดียวกัน</button>
+              <button onClick={filterBySameProvince} className="flex-1 py-1.5 text-xs font-bold bg-[var(--orange)] text-white rounded-lg">📍 จังหวัดเดียวกัน</button>
+              <button onClick={filterBySameDistrict} className="flex-1 py-1.5 text-xs font-bold bg-gray-500/20 text-gray-500 rounded-lg">อำเภอเดียวกัน</button>
           </div>
 
           <div className="relative">
@@ -362,7 +373,7 @@ export const Explore: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {sidebarUsers.map(profile => (
+          {shown.map(profile => (
             <div key={profile.id} onClick={() => handleUserClick(profile)} className="p-3 bg-white/10 rounded-xl border border-white/10 hover:border-[var(--orange)] cursor-pointer transition-all flex items-center space-x-3 group relative hover-glow-cyan">
                 <div className="relative">
                     <img src={profile.photoUrl} className="w-10 h-10 rounded-full object-cover border border-white/20" />
@@ -378,7 +389,7 @@ export const Explore: React.FC = () => {
                 </div>
             </div>
           ))}
-          {sidebarUsers.length === 0 && (
+          {shown.length === 0 && (
             <p className="text-center text-xs opacity-50 mt-8">ไม่พบผู้ใช้ในพื้นที่นี้</p>
           )}
         </div>

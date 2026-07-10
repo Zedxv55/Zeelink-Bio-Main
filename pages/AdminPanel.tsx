@@ -150,7 +150,7 @@ export const AdminPanel: React.FC = () => {
                           <td className="px-6 py-4 text-[10px] opacity-70">{fmtLastSeen(u.lastSeen)}</td>
                           <td className="px-6 py-4 text-right space-x-2">
                             {u.username && (
-                              <button onClick={() => window.open(`/#/${u.username}`, '_blank')} className="text-blue-500 hover:scale-110 transition-transform" title="ดูโปรไฟล์"><Edit3 size={14} /></button>
+                              <button onClick={() => window.open(`/#/${u.username}`, '_blank', 'noopener,noreferrer')} className="text-blue-500 hover:scale-110 transition-transform" title="ดูโปรไฟล์"><Edit3 size={14} /></button>
                             )}
                             {u.isBanned ? (
                               <button onClick={() => afterAction(() => unbanUser(u.userId))} className="text-green-500 hover:scale-110 transition-transform" title="ปลดแบน"><ShieldCheck size={14} /></button>

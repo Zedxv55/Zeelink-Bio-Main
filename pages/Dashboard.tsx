@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
 import { DemoOverlay } from '../components/DemoOverlay';
-import { supabase } from '../contexts/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../contexts/supabaseClient';
 import { detectPlatform, isValidUrl } from '../lib/social';
 import L from 'leaflet';
 
@@ -30,12 +30,14 @@ export const Dashboard: React.FC = () => {
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
 
-  // Portfolio gallery state (seeded with demo mock data for preview mode)
-  const [portfolioImages, setPortfolioImages] = useState<string[]>([
-    'https://picsum.photos/seed/zeelink1/400/400',
-    'https://picsum.photos/seed/zeelink2/400/400',
-    'https://picsum.photos/seed/zeelink3/400/400'
-  ]);
+  // Portfolio gallery state — แสดง mock เฉพาะโหมด demo (ยังไม่ได้ตั้งค่า Supabase)
+  const [portfolioImages, setPortfolioImages] = useState<string[]>(
+    isSupabaseConfigured ? [] : [
+      'https://picsum.photos/seed/zeelink1/400/400',
+      'https://picsum.photos/seed/zeelink2/400/400',
+      'https://picsum.photos/seed/zeelink3/400/400'
+    ]
+  );
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -160,7 +162,7 @@ export const Dashboard: React.FC = () => {
               setPostalCode(`${provData.zipCodeBase}000`);
           }
       }
-  }, [province, district, subDistrict]);
+  }, [province, district, subDistrict, region, selectedRegionData]);
 
   // ===== Single profile photo upload =====
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,7 +193,7 @@ export const Dashboard: React.FC = () => {
 
   // ===== Multi-image portfolio gallery upload =====
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
     setUploadError(null);
 
@@ -562,7 +564,7 @@ export const Dashboard: React.FC = () => {
                       </div>
                       <div className="flex space-x-2">
                           <button onClick={() => navigator.clipboard.writeText(shareLink)} className="p-2 bg-white/10 rounded-lg hover:bg-white/20"><Copy size={16}/></button>
-                          <a href={shareLink} target="_blank" className="p-2 bg-white/10 rounded-lg hover:bg-white/20"><ExternalLink size={16}/></a>
+                          <a href={shareLink} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/10 rounded-lg hover:bg-white/20"><ExternalLink size={16}/></a>
                       </div>
                   </div>
               )}

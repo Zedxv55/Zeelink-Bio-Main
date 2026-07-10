@@ -13,8 +13,8 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
     setMobileMenuOpen(false);
   };
@@ -25,7 +25,7 @@ export const Navbar: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <Logo size={34} variant="dark" withWordmark />
+            <Logo size={34} variant={theme === 'dark' ? 'light' : 'dark'} withWordmark />
           </Link>
 
           {/* Desktop Navigation */}

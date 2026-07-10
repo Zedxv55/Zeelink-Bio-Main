@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role, AdminUserView, OnlineUser } from '../types';
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 // Realtime presence ใช้ ref ระดับ module เพื่อไม่ให้หายเมื่อ component re-render
 let presenceChannel: any = null;
 let presenceHeartbeat: any = null;
+
+// กันกดใจซ้ำ (ต่อเซสชัน) — เก็บ profileId ที่ผู้ใช้กดใจแล้ว
+const likedProfileIds = new Set<string>();
 
 interface AuthContextType {
   user: User | null;
@@ -215,6 +218,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!user) {
         return { user: null, error: 'เข้าสู่ระบบสำเร็จ แต่โหลดข้อมูลผู้ใช้ไม่ได้ กรุณาลองใหม่อีกครั้ง' };
       }
+      // ผู้ใช้ที่ถูกแบนห้ามเข้าใช้งาน → ออกจากระบบทันที
+      if (user.isBanned) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        return { user: null, error: 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อแอดมิน' };
+      }
       return { user };
     } catch (error: any) {
       console.error('Login error:', error);
@@ -263,7 +273,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/dashboard` }
+        options: { redirectTo: `${window.location.origin}/#/dashboard` }
       });
       if (error) throw error;
       return true;
@@ -283,7 +293,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/#/login`,
       });
       if (error) throw error;
       return true;
@@ -335,8 +345,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const toggleLike = async (profileId: string) => {
+    if (!user) return; // ต้องล็อกอินก่อน (กันสแปมกดใจโดยไม่ล็อกอิน)
+    if (likedProfileIds.has(profileId)) return; // เคยกดใจในเซสชันนี้แล้ว → ข้าม
+    likedProfileIds.add(profileId);
     try {
-      const { data: profile, error: fetchError } = await supabase
+      const { data: row, error: fetchError } = await supabase
         .from('profiles')
         .select('likes')
         .eq('id', profileId)
@@ -346,7 +359,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ likes: (profile.likes || 0) + 1 })
+        .update({ likes: (row.likes || 0) + 1 })
         .eq('id', profileId);
 
       if (updateError) throw updateError;
@@ -355,10 +368,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         p.id === profileId ? { ...p, likes: (p.likes || 0) + 1 } : p
       ));
 
-      if (profile?.id === profileId) {
+      // เทียบกับ state profile (ของหน้าโปรไฟล์ที่กำลังดู) — ไม่ใช่ตัวแปรที่ fetch มา
+      if (profile && profile.id === profileId) {
         setProfile(prev => prev ? { ...prev, likes: (prev.likes || 0) + 1 } : null);
       }
     } catch (error) {
+      likedProfileIds.delete(profileId); // เกิดข้อผิดพลาด → อนุญาตให้กดใหม่ได้
       console.error('Toggle like error:', error);
     }
   };
@@ -415,6 +430,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         bio: 'โปรแกรมเมอร์ไทย 🇹🇭', tags: ['developer', 'bangkok'],
         region: 'ภาคกลาง', province: 'กรุงเทพมหานคร', district: 'จตุจักร',
         subDistrict: 'ลาดยาว', postalCode: '10900', showOnExplore: true,
+        lat: 0, lng: 0,
         likes: 45, views: 120,
         themeConfig: { backgroundColor: '#1e40af', textColor: '#ffffff', buttonColor: '#f59e0b', fontFamily: 'Kanit', layout: 'modern', enableGlassEffect: false },
         links: [{ id: '1', title: 'GitHub', url: 'https://github.com', clicks: 0, isActive: true }],
@@ -652,16 +668,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     ));
     if (!user) return;
     try {
-      // ใน DB ใช้ RPC หรือ update ผ่าน liked_users — ทำแบบง่าย: โหลด แล้ว +/-
-      const { data } = await supabase.from('posts').select('likes, liked_users').eq('id', postId).single();
-      if (data) {
-        const likedUsers: string[] = data.liked_users || [];
-        const has = likedUsers.includes(user.id);
-        const next = has ? likedUsers.filter(id => id !== user.id) : [...likedUsers, user.id];
-        await supabase.from('posts').update({ likes: (data.likes || 0) + (has ? -1 : 1), liked_users: next }).eq('id', postId);
+      // แนวทางหลัก: ใช้ RPC ฝั่ง server (SECURITY DEFINER) — กันแก้โพสต์คนอื่น + กันกดไลก์ซ้ำ (S10)
+      const { error } = await supabase.rpc('toggle_post_like', { p_id: postId, uid: user.id });
+      if (error) throw error;
+    } catch (err) {
+      // Fallback: ยังไม่มี RPC (รัน security-fixes.sql แล้วจะมี) → อัปเดตผ่าน liked_users แบบเดิม
+      console.warn('toggle_post_like RPC ยังไม่พร้อม หรือล้มเหลว — ใช้ fallback', err);
+      try {
+        const { data } = await supabase.from('posts').select('likes, liked_users').eq('id', postId).single();
+        if (data) {
+          const likedUsers: string[] = data.liked_users || [];
+          const has = likedUsers.includes(user.id);
+          const next = has ? likedUsers.filter(id => id !== user.id) : [...likedUsers, user.id];
+          await supabase.from('posts').update({ likes: (data.likes || 0) + (has ? -1 : 1), liked_users: next }).eq('id', postId);
+        }
+      } catch (error) {
+        console.error('Like post error:', error);
       }
-    } catch (error) {
-      console.error('Like post error:', error);
     }
   };
 

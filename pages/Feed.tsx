@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
-import { fonts, fontSize, spacing, palette } from '../lib/designTokens';
-import { isValidUrl } from '../lib/social';
+import { fonts, palette } from '../lib/designTokens';
 import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X } from 'lucide-react';
 
 // จับ URL รูป/วิดีโอ จากข้อความ (รองรับแชร์ลิงก์ media แบบเดียวกับ Facebook)
@@ -157,7 +156,7 @@ export const Feed: React.FC = () => {
                 <button onClick={() => { setOpenCommentId(openCommentId === post.id ? null : post.id); setCommentFor(post.id); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-white/10 opacity-70">
                   <MessageCircle size={18} /> คอมเมนต์
                 </button>
-                <button onClick={() => { if (navigator.share) navigator.share({ title: post.displayName, text: post.text, url: window.location.origin + '/#' + post.username }); else navigator.clipboard.writeText(window.location.origin + '/#' + post.username); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-white/10 opacity-70">
+                <button onClick={() => { if (navigator.share) navigator.share({ title: post.displayName, text: post.text, url: window.location.origin + '/#/' + post.username }); else navigator.clipboard.writeText(window.location.origin + '/#/' + post.username); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-white/10 opacity-70">
                   <Share2 size={18} /> แชร์
                 </button>
               </div>

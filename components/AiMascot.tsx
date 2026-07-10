@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Send, X, Sparkles, Bot, LayoutDashboard, Newspaper, Map as MapIcon } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * AiMascot — ตัวการ์ตูนน่ารัก "น้องซี" แอดมินจำลองของ Zeelink
  * - ใช้ CSS animation เท่านั้น (ไม่มี requestAnimationFrame) → ไม่ทำให้หน้าเว็บค้าง/หน่วง
  * - มีข้อความลอยรอบๆ ชวนคุย ("มีอะไรให้ช่วยไหม?" ฯลฯ)
  * - คลิกตัวการ์ตูน → เปิดแชทสั่งการ/ถามได้
- * - เชื่อม AI จริง (Groq) ผ่าน VITE_AI_API_KEY ถ้าไม่ได้ตั้งค่าหรือเรียกไม่สำเร็จ จะตกไปใช้ "แอดมินจำลอง" (คำตอบภาษาไทยสำรอง)
+ * - เชื่อม AI จริงผ่าน backend same-origin `/api/ai` (คีย์เก็บฝั่ง server เท่านั้น ไม่รั่วในเบราว์เซอร์)
+ *   ถ้าไม่มี endpoint หรือเรียกไม่สำเร็จ จะตกไปใช้ "แอดมินจำลอง" (คำตอบภาษาไทยสำรอง)
  */
 
 const FLOATING_HINTS = [
@@ -38,6 +40,7 @@ const simulatedAdmin = (text: string): string => {
 
 export const AiMascot: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [hintIdx, setHintIdx] = useState(0);
   const [messages, setMessages] = useState<{ role: 'user' | 'bot'; text: string }[]>([
@@ -46,6 +49,13 @@ export const AiMascot: React.FC = () => {
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
+
+  // ป้องกัน setState หลัง unmount (เช่น ปิดแชทระหว่างรอ fetch)
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   // หมุนข้อความลอย
   useEffect(() => {
@@ -58,29 +68,20 @@ export const AiMascot: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typing]);
 
+  // เรียก backend same-origin `/api/ai` (คีย์อยู่ฝั่ง server) — ล้มเหลวเมื่อไหร่ตกไปใช้แอดมินจำลอง
   const askAI = async (userText: string): Promise<string> => {
-    const url = import.meta.env.VITE_AI_API_URL as string | undefined;
-    const key = import.meta.env.VITE_AI_API_KEY as string | undefined;
-    const model = (import.meta.env.VITE_AI_MODEL as string) || 'llama-3.3-70b-versatile';
-    if (!url || !key) return simulatedAdmin(userText);
     try {
-      const res = await fetch(url, {
+      const res = await fetch('/api/ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: 'คุณคือ "น้องซี" แอดมินจำลองของแพลตฟอร์ม Zeelink (พอร์ตโฟลิโอสำหรับคนไทย) จงตอบสั้นๆ เป็นภาษาไทย ให้ความช่วยเหลือเรื่องการสร้างพอร์ตโฟลิโอ แผนที่ โพสต์ในฟีด และการล็อกอิน' },
-            { role: 'user', content: userText }
-          ],
-          max_tokens: 280,
-          temperature: 0.7
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, userName: user?.name || 'เพื่อน' })
       });
       if (!res.ok) throw new Error('bad');
       const data = await res.json();
-      return data?.choices?.[0]?.message?.content?.trim() || simulatedAdmin(userText);
+      if (data?.error || !data?.reply) return simulatedAdmin(userText);
+      return String(data.reply).trim() || simulatedAdmin(userText);
     } catch {
+      // ไม่มี endpoint (เช่น รัน local ไม่มี server) หรือเครือข่ายล้มเหลว → ใช้คำตอบสำรอง
       return simulatedAdmin(userText);
     }
   };
@@ -92,6 +93,7 @@ export const AiMascot: React.FC = () => {
     setMessages(prev => [...prev, { role: 'user', text }]);
     setTyping(true);
     const reply = await askAI(text);
+    if (!mountedRef.current) return; // ปิดแชท/unmount ระหว่างรอ → หยุด อย่า setState
     setTyping(false);
     setMessages(prev => [...prev, { role: 'bot', text: reply }]);
   };

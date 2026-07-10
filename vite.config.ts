@@ -1,23 +1,29 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
+// โหมด demo (ไม่มี .env) ยังคงทำงานได้ — Supabase client มี fallback อยู่แล้วใน supabaseClient.ts
+export default defineConfig({
+  server: {
+    port: 3000,
+    host: '0.0.0.0', // dev only — เปิดให้เข้าถึงจากเครื่องอื่นใน LAN (เทสบนมือถือ)
+  },
+  plugins: [react()],
+  build: {
+    // แบ่ง chunk เพื่อลดขนาดไฟล์หลัก (แก้ปัญหา bundle 724kB)
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          leaflet: ['leaflet'],
+        },
       },
-      plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
+    },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+    },
+  },
 });

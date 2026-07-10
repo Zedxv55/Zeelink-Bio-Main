@@ -186,7 +186,7 @@ export const Login: React.FC = () => {
             <div className="relative">
               <Lock className="absolute left-3 top-3" size={20} style={{ color: 'var(--text-muted)' }} />
               <input
-                type={mode === 'setpw' ? 'password' : 'password'}
+                type="password"
                 placeholder={mode === 'setpw' ? 'รหัสผ่านใหม่' : 'รหัสผ่าน'}
                 value={mode === 'setpw' ? newPassword : password}
                 onChange={(e) => mode === 'setpw' ? setNewPassword(e.target.value) : setPassword(e.target.value)}

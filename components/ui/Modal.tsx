@@ -6,7 +6,7 @@ interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   imageUrl?: string;
   linkUrl?: string;
   linkLabel?: string;
@@ -44,14 +44,14 @@ export const Modal: React.FC<ModalProps> = ({
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full relative overflow-hidden animate-[scaleIn_0.3s_ease-out]"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full relative overflow-hidden animate-scale-in"
         style={{ maxWidth, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
       >
         <button
           onClick={onClose}

@@ -23,7 +23,8 @@ export const Input: React.FC<InputProps> = ({
   style,
   ...props
 }) => {
-  const inputId = id || `inp-${Math.random().toString(36).slice(2, 8)}`;
+  const generatedId = React.useId();
+  const inputId = id || generatedId;
   const [focused, setFocused] = useState(false);
 
   const base: React.CSSProperties = {

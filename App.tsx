@@ -34,7 +34,9 @@ const App: React.FC = () => {
         imageUrl={activePopup?.imageUrl}
         linkUrl={activePopup?.linkUrl}
         linkLabel="ดูรายละเอียด"
-      />
+      >
+        {activePopup?.content && <div dangerouslySetInnerHTML={{ __html: activePopup.content }} />}
+      </Modal>
 
       <Routes>
         <Route path="/" element={<Landing />} />

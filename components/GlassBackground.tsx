@@ -9,7 +9,7 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({ children, clas
   return (
     <div className={`min-h-screen relative ${className}`}>
       {/* Background Gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
+      <div className="fixed inset-0 -z-10" style={{ background: 'linear-gradient(to bottom right, var(--bg-primary), var(--bg-secondary), var(--bg-primary))' }} />
       
       {/* Animated Grid Pattern */}
       <div className="fixed inset-0 opacity-20">
