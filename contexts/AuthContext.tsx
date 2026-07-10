@@ -13,7 +13,7 @@ interface AuthContextType {
   questions: Question[];
 
   // Methods
-  login: (email: string, password: string, remember?: boolean) => Promise<User | null>;
+  login: (email: string, password: string, remember?: boolean) => Promise<{ user: User | null; error?: string }>;
   loginWithOAuth: (provider: 'google' | 'facebook') => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<{ user: User | null; needsConfirmation?: boolean }>;
   resetPassword: (email: string) => Promise<boolean>;
@@ -145,7 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       .from('users')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (error || !userData) {
       setUser(null);
@@ -160,25 +160,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       .from('profiles')
       .select('*')
       .eq('user_id', userData.id)
-      .single();
+      .maybeSingle();
 
     if (profileData) setProfile(mapProfile(profileData));
     return mapped;
   };
 
   // ===== Supabase Auth จริง =====
-  const login = async (email: string, password: string, remember = false): Promise<User | null> => {
+  const login = async (email: string, password: string, remember = false): Promise<{ user: User | null; error?: string }> => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (error) {
+        const msg = error.message || '';
+        let friendly = 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+        if (/email not confirmed/i.test(msg) || (error as any).code === 'email_not_confirmed') {
+          friendly = '📧 อีเมลนี้ยังไม่ได้ยืนยัน กรุณากดลิงก์ยืนยันในกล่องจดหมาย (หรือโฟลเดอร์ Junk/Spam) ก่อนเข้าใช้งาน';
+        } else if (/invalid login credentials/i.test(msg)) {
+          friendly = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        } else if (/rate limit|too many/i.test(msg)) {
+          friendly = 'พยายามเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่';
+        } else if (msg) {
+          friendly = msg;
+        }
+        console.error('Login error:', msg);
+        return { user: null, error: friendly };
+      }
       if (remember) localStorage.setItem('zeelink_remember', '1');
       // สร้างแถว users/profiles หากยังไม่มี (รองรับบัญชีที่สมัครก่อนมี trigger)
       await ensureUserRecord(email);
-      return await loadUserByEmail(email);
-    } catch (error) {
+      const user = await loadUserByEmail(email);
+      if (!user) {
+        return { user: null, error: 'เข้าสู่ระบบสำเร็จ แต่โหลดข้อมูลผู้ใช้ไม่ได้ กรุณาลองใหม่อีกครั้ง' };
+      }
+      return { user };
+    } catch (error: any) {
       console.error('Login error:', error);
-      return null;
+      return { user: null, error: error?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' };
     } finally {
       setIsLoading(false);
     }

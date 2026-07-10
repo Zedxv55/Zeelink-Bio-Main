@@ -69,9 +69,9 @@ export const Login: React.FC = () => {
       }
 
       if (mode === 'login') {
-        const user = await login(email, password, remember);
+        const { user, error: loginErr } = await login(email, password, remember);
         if (user) navigate(user.role === 'admin' ? '/admin' : '/dashboard');
-        else setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
+        else setError(loginErr || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
       } else {
         const res = await register(email, password, name);
         if (res.user && !res.needsConfirmation) {
