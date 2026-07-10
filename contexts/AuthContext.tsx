@@ -562,23 +562,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeData();
 
+    // Safety net: หน้าจอต้องไม่ค้างที่ "Loading" ตลอดกาล
+    // ถ้า init ใช้เวลานานผิดปกติ (เช่น network ค้าง) ให้ปลดล็อกหน้าจอหลัง 8 วินาที
+    const loadingTimeout = setTimeout(() => setIsLoading(false), 8000);
+
     // ซิงค์ state เมื่อ login/logout ระหว่างใช้งาน
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // ⚠️ สำคัญ: ห้าม await การเรียก supabase อื่น ๆ "ภายใน" callback นี้โดยตรง
+    // เพราะ callback รันขณะที่ supabase-js ถือ auth lock อยู่ → จะเกิด deadlock
+    // (หน้าค้างที่ "Loading Zeelink System...") ทางแก้คือ defer ออกไปด้วย setTimeout(…, 0)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user?.email) {
-        let u = await loadUserByEmail(session.user.email);
-        // ผู้ใช้ที่ล็อกอินผ่าน OAuth จะยังไม่มีแถวในตาราง users → สร้างให้อัตโนมัติ
-        if (!u) {
-          const meta = session.user.user_metadata || {};
-          await ensureUserRecord(session.user.email, meta.full_name || meta.name, meta.avatar_url || meta.picture);
-          u = await loadUserByEmail(session.user.email);
-        }
+        const email = session.user.email;
+        const meta = session.user.user_metadata || {};
+        // เลื่อนงาน async ออกไปนอก lock เพื่อไม่ให้ deadlock
+        setTimeout(async () => {
+          try {
+            let u = await loadUserByEmail(email);
+            // ผู้ใช้ที่ล็อกอินผ่าน OAuth จะยังไม่มีแถวในตาราง users → สร้างให้อัตโนมัติ
+            if (!u) {
+              await ensureUserRecord(email, meta.full_name || meta.name, meta.avatar_url || meta.picture);
+              await loadUserByEmail(email);
+            }
+          } catch (err) {
+            console.error('onAuthStateChange handler error:', err);
+          }
+        }, 0);
       } else {
         setUser(null);
         setProfile(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const value: AuthContextType = {
