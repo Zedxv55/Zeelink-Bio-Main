@@ -349,6 +349,28 @@
       .reveal.in{ transition-delay:0s; }
       @media (prefers-reduced-motion: reduce){ .reveal{ opacity:1; transform:none; } }
 
+      /* ===== AiMascot (ตัวการ์ตูนน่ารัก — CSS animation เท่านั้น ไม่หน่วง) ===== */
+      @keyframes mascotBob {
+        0%, 100% { transform: translateY(0) rotate(-1deg); }
+        50% { transform: translateY(-7px) rotate(1deg); }
+      }
+      @keyframes mascotFloat {
+        0%, 100% { transform: translateY(0); opacity: 0.92; }
+        50% { transform: translateY(-6px); opacity: 1; }
+      }
+
+      /* ข้อความลอยขึ้นลงบนหน้า Login */
+      @keyframes bobUpDown {
+        0%   { transform: translateY(8px); opacity: 0; }
+        15%  { opacity: 0.85; }
+        50%  { transform: translateY(-22px); opacity: 1; }
+        85%  { opacity: 0.85; }
+        100% { transform: translateY(8px); opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce){
+        [style*="mascotBob"], [style*="mascotFloat"]{ animation: none !important; }
+      }
+
       /* navbar (เข้ากับหน้าแรก) */
       .pixel-nav{ background:var(--glass-bg); border-bottom:2px solid var(--orange); backdrop-filter:blur(6px); }
       .pixel-link{ color:var(--text-primary); padding:8px 12px; border-radius:0; transition:color .15s, text-shadow .15s; }

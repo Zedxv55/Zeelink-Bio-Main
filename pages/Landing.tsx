@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Profile } from '../types';
 import { ThaiBackground } from '../components/ThaiBackground';
-import { PixelMascot } from '../components/PixelMascot';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { fonts, fontSize, lineHeight, spacing, layout } from '../lib/designTokens';
@@ -87,6 +86,9 @@ export const Landing: React.FC = () => {
     return () => obs.disconnect();
   }, []);
 
+  // หน้าแรกแสดงเฉพาะผู้ที่ยังไม่ได้ล็อกอิน (ผู้ใช้ที่ล็อกอินแล้วจะถูกพาไปฟีด)
+  if (user) return <Navigate to="/feed" replace />;
+
   const filterProfilesByMood = (mood: string): Profile[] => {
     const kw = mood.toLowerCase();
     const matched = usersList.filter(u =>
@@ -104,8 +106,6 @@ export const Landing: React.FC = () => {
 
   return (
     <div className="pixel-landing" ref={landingRef}>
-      {/* Pixel Mascot — ตัวการ์ตูนพิกเซลขับตามเมาส์ */}
-      <PixelMascot />
       {/* ===== Interactive floating phrases (clickable filter tags) ===== */}
       <ThaiBackground onTagClick={setActiveMood} />
 

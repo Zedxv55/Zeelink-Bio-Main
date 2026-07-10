@@ -5,6 +5,7 @@ import { supabase } from '../contexts/supabaseClient';
 import { ThaiBackground } from '../components/ThaiBackground';
 import { Button } from '../components/ui/Button';
 import { fonts, fontSize, spacing, radius } from '../lib/designTokens';
+import { FLOATING_PHRASES } from '../constants';
 import { Lock, Mail, User, Facebook } from 'lucide-react';
 
 // โลโก้ Google "G" แบบ inline SVG (lucide ไม่มีไอคอน Google)
@@ -19,13 +20,20 @@ const GoogleIcon: React.FC = () => (
 
 type Mode = 'login' | 'register' | 'forgot' | 'setpw';
 
+// ตำแหน่งข้อความลอย (คอลัมน์/แถว สัดส่วนหน้าจอ)
+const FLOAT_POS = [
+  { top: '14%', left: '8%', dur: 7 }, { top: '22%', right: '10%', dur: 9 },
+  { top: '46%', left: '6%', dur: 8 }, { top: '62%', right: '8%', dur: 10 },
+  { top: '78%', left: '12%', dur: 8.5 }, { top: '34%', right: '14%', dur: 9.5 },
+];
+
 export const Login: React.FC = () => {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [name, setName] = useState('');
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true); // จำรหัสอัตโนมัติทุกครั้ง (session ถูกเก็บใน Supabase อยู่แล้ว)
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +45,9 @@ export const Login: React.FC = () => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setMode('setpw');
     });
+    // จำอีเมลไว้ให้พร้อมกรอกทุกครั้ง (ไม่เก็บรหัสผ่าน เพื่อความปลอดภัย)
+    const saved = localStorage.getItem('zeelink_remember_email');
+    if (saved) setEmail(saved);
   }, []);
 
   const handleOAuth = async (provider: 'google' | 'facebook') => {
@@ -70,11 +81,15 @@ export const Login: React.FC = () => {
 
       if (mode === 'login') {
         const { user, error: loginErr } = await login(email, password, remember);
-        if (user) navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+        if (user) {
+          localStorage.setItem('zeelink_remember_email', email);
+          navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+        }
         else setError(loginErr || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
       } else {
         const res = await register(email, password, name);
         if (res.user && !res.needsConfirmation) {
+          localStorage.setItem('zeelink_remember_email', email);
           alert('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
           navigate(res.user.role === 'admin' ? '/admin' : '/dashboard');
         } else if (res.needsConfirmation) {
@@ -89,8 +104,27 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
       <ThaiBackground />
+
+      {/* ข้อความลอยขึ้นลง (ช้างกูอยู่ไหน ฯลฯ) — ตาม Blueprint N2: อนิเมชั่นมีชีวิตชีวา ไม่หน่วง */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {FLOAT_POS.map((p, i) => (
+          <span
+            key={i}
+            className="absolute whitespace-nowrap text-lg md:text-2xl font-bold"
+            style={{
+              top: p.top, left: p.left, right: p.right,
+              color: 'var(--text-muted)',
+              textShadow: '0 0 12px var(--orange-soft)',
+              opacity: 0,
+              animation: `bobUpDown ${p.dur}s ease-in-out ${i * 1.3}s infinite`
+            }}
+          >
+            {FLOATING_PHRASES[(i * 7 + 3) % FLOATING_PHRASES.length]}
+          </span>
+        ))}
+      </div>
       <div
         className="relative z-10 w-full max-w-md rounded-2xl shadow-2xl p-8"
         style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}

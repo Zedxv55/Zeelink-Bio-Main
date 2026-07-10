@@ -28,11 +28,19 @@ npm run dev      # เปิดเซิร์ฟเวอร์ → http://loca
 
 ## ต่อฐานข้อมูลให้ระบบสมาชิกทำงานจริง
 1. สร้างโปรเจกต์ฟรีที่ https://supabase.com
-2. เปิด **SQL Editor** → รันไฟล์ `supabase/schema.sql` (สร้างตารางให้หมด รวมถึง `posts`, `post_comments` สำหรับฟีด และคอลัมน์ `lat/lng` ใน `profiles`)
-3. แก้ไฟล์ `.env` (คัดลอกจาก `.env.example`) ใส่ Project URL + anon key จาก Supabase Settings → API
-4. รีสตาร์ท `npm run dev` → สมัครสมาชิก / ล็อกอิน / โปรไฟล์ / ฟีด จะทำงานจริง
+2. เปิด **SQL Editor** → รันไฟล์ `supabase/schema.sql` (สร้างตารางพื้นฐาน)
+3. **รันเพิ่ม** ไฟล์ `supabase/migration-feed-latlng.sql` เพื่อเพิ่มตาราง `posts`/`post_comments` และคอลัมน์ `lat/lng` (รันซ้ำได้ ไม่ error)
+4. แก้ไฟล์ `.env` (คัดลอกจาก `.env.example`) ใส่ Project URL + anon key จาก Supabase Settings → API
+5. รีสตาร์ท `npm run dev` → สมัครสมาชิก / ล็อกอิน / โปรไฟล์ / ฟีด จะทำงานจริง
 
 > 💡 ถ้ายังไม่มี `.env` แอปจะเข้า **โหมด Demo** โดยอัตโนมัติ (มีข้อมูลจำลอง ทุกหน้าใช้งานได้ปกติ) ไม่พังหน้าจอ
+> 🤖 แอดมินจำลอง (AiMascot) ใช้ Groq API (ตั้งค่าใน `.env` → `VITE_AI_API_KEY`) หากไม่ตั้งค่าจะตกไปใช้คำตอบสำรองภาษาไทย
+
+## สถานะฐานข้อมูลปัจจุบัน
+- [x] ตาราง `users` / `profiles` / `questions` / `popups` — เชื่อมต่อ Supabase จริงแล้ว (สร้างพอร์ต/โปรไฟล์ persist ได้)
+- [x] ระบบสมาชิก (ล็อกอิน/สมัคร/OAuth) ทำงานจริง
+- [ ] ตาราง `posts` / `post_comments` + คอลัมน์ `lat/lng` — รัน `supabase/migration-feed-latlng.sql` ครั้งเดียวเพื่อเปิดใช้งานฟีดและแชร์ตำแหน่งแบบถาวร
+  (ก่อนรัน ฟีดและแชร์ตำแหน่งทำงานในโหมดจำลองในเซสชันนั้น)
 
 ## ฟีเจอร์ใหม่ (อัปเดตล่าสุด)
 - **Pixel Mascot** — ตัวการ์ตูนพิกเซลขับตามเมาส์ คลิกเพื่อให้ทักทาย (หน้าแรก + ฟีด)

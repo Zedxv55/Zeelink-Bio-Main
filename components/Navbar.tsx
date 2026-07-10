@@ -30,9 +30,11 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            <Link to="/" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
-              <Home size={16} className="mr-2" /> หน้าแรก
-            </Link>
+            {!user && (
+              <Link to="/" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
+                <Home size={16} className="mr-2" /> หน้าแรก
+              </Link>
+            )}
             {user && (
               <>
                 <Link to="/feed" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
@@ -102,9 +104,11 @@ export const Navbar: React.FC = () => {
             style={{ borderColor: 'var(--glass-border)', background: 'var(--glass-bg)' }}
           >
             <div className="flex flex-col space-y-2" style={{ fontFamily: fonts.body }}>
-              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center" style={{ fontSize: fontSize('base') }}>
-                <Home size={18} className="mr-3" /> หน้าแรก
-              </Link>
+              {!user && (
+                <Link to="/" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center" style={{ fontSize: fontSize('base') }}>
+                  <Home size={18} className="mr-3" /> หน้าแรก
+                </Link>
+              )}
 
               {user && (
                 <>

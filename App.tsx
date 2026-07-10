@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
+import { AiMascot } from './components/AiMascot';
 import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Explore } from './pages/Explore';
@@ -22,7 +23,9 @@ const App: React.FC = () => {
   return (
     <>
       <Navbar />
-      
+      <AiMascot />
+
+
       {/* Global Popup System */}
       <Modal
         open={!!activePopup}

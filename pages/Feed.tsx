@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
-import { PixelMascot } from '../components/PixelMascot';
 import { fonts, fontSize, spacing, palette } from '../lib/designTokens';
 import { isValidUrl } from '../lib/social';
 import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X } from 'lucide-react';
@@ -68,7 +67,6 @@ export const Feed: React.FC = () => {
 
   return (
     <GlassBackground>
-      <PixelMascot />
       <div className="min-h-screen pt-24 pb-20 px-4" style={{ fontFamily: fonts.body }}>
         <div className="max-w-2xl mx-auto space-y-5">
 
