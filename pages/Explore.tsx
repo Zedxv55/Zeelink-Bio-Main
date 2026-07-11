@@ -93,10 +93,12 @@ export const Explore: React.FC = () => {
 
   const [refreshCooldown, setRefreshCooldown] = useState(0);
   const [sidebarUsers, setSidebarUsers] = useState<Profile[]>([]);
+  const [filterMode, setFilterMode] = useState<'near' | 'province' | 'district'>('near');
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   useEffect(() => {
     refreshSidebarUsers();
-  }, [usersList, userProfile]);
+  }, [usersList, userProfile, filterMode, refreshNonce]);
 
   useEffect(() => {
     if (refreshCooldown > 0) {
@@ -125,8 +127,17 @@ export const Explore: React.FC = () => {
   };
 
   // เรียง sidebar ตามความใกล้ชิด: จังหวัดเดียวกันก่อน → ตามระยะห่างจากจังหวัดผู้ใช้ → ยอดถูกใจ
+  // รองรับ filterMode ('near' | 'province' | 'district') เพื่อคงสถานะตัวกรองแม้ usersList เปลี่ยน
   const refreshSidebarUsers = () => {
       const potentialUsers = usersList.filter(u => u.showOnExplore);
+      if (filterMode === 'province' && userProfile?.province) {
+        setSidebarUsers(potentialUsers.filter(u => u.province === userProfile.province).slice(0, 15));
+        return;
+      }
+      if (filterMode === 'district' && userProfile?.district) {
+        setSidebarUsers(potentialUsers.filter(u => u.district === userProfile.district).slice(0, 15));
+        return;
+      }
       const me = userProfile?.province ? provinceCenter(userProfile.province) : null;
       const sorted = [...potentialUsers].sort((a, b) => {
         if (userProfile?.province) {
@@ -146,18 +157,19 @@ export const Explore: React.FC = () => {
 
   const handleManualRefresh = () => {
       if (refreshCooldown > 0) return;
-      refreshSidebarUsers();
+      setFilterMode('near');
+      setRefreshNonce(n => n + 1);
       setRefreshCooldown(30);
   };
 
-  // กรองรายชื่อตามจังหวัด/อำเภอเดียวกับผู้ใช้
+  // กรองรายชื่อตามจังหวัด/อำเภอเดียวกับผู้ใช้ (คงสถานะตัวกรองไว้ผ่าน filterMode)
   const filterBySameProvince = () => {
       if (!userProfile?.province) return;
-      setSidebarUsers(usersList.filter(u => u.showOnExplore && u.province === userProfile.province).slice(0, 15));
+      setFilterMode('province');
   };
   const filterBySameDistrict = () => {
       if (!userProfile?.district) return;
-      setSidebarUsers(usersList.filter(u => u.showOnExplore && u.district === userProfile.district).slice(0, 15));
+      setFilterMode('district');
   };
 
   const getProfilePosition = (provinceName: string) => {
