@@ -77,7 +77,7 @@ export const Login: React.FC = () => {
       if (mode === 'setpw') {
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) { setError('ตั้งรหัสผ่านไม่สำเร็จ ' + error.message); return; }
-        alert('✅ ตั้งรหัสผ่านใหม่สำเร็จแล้ว');
+        setInfo('✅ ตั้งรหัสผ่านใหม่สำเร็จแล้ว');
         navigate('/dashboard');
         return;
       }
@@ -93,7 +93,7 @@ export const Login: React.FC = () => {
         const res = await register(email, password, name);
         if (res.user && !res.needsConfirmation) {
           localStorage.setItem('zeelink_remember_email', email);
-          alert('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
+          setInfo('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
           navigate(res.user.role === 'admin' ? '/admin' : '/dashboard');
         } else if (res.needsConfirmation) {
           setInfo('📧 กรุณายืนยันอีเมลในกล่องจดหมายของคุณ ก่อนเข้าใช้งาน');
