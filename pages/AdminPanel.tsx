@@ -4,7 +4,7 @@ import { Trash2, Ban, ShieldCheck, ShieldOff, Download, Users, Edit3, Database, 
 import { Navigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
-import { SystemPopup, AiConfig } from '../types';
+import { SystemPopup, AiConfig, AdminUserView } from '../types';
 
 const fmtLastSeen = (iso?: string | null): string => {
   if (!iso) return '—';
@@ -114,6 +114,25 @@ export const AdminPanel: React.FC = () => {
     await loadAllUsers();
   };
 
+  // สลับเปิด/ปิด AI เฉพาะบุคคล (บางคน) — ใช้ตาราง ai_configs (scope=user)
+  const toggleUserAi = async (u: AdminUserView) => {
+    try {
+      const existing = aiConfigs.find(c => c.scope === 'user' && c.ownerRef === u.userId);
+      const enabled = !(existing?.enabled ?? true);
+      await saveAiConfig({
+        id: existing?.id || '',
+        scope: 'user',
+        ownerRef: u.userId,
+        model: existing?.model || 'llama-3.3-70b-versatile',
+        persona: existing?.persona || '',
+        enabled,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (e) {
+      alert('เปลี่ยนสิทธิ์ AI ไม่สำเร็จ: ' + (e as Error).message);
+    }
+  };
+
   return (
     <GlassBackground>
       <div className="min-h-screen pt-24 px-4 pb-20">
@@ -220,6 +239,13 @@ export const AdminPanel: React.FC = () => {
                             ) : (
                               !isSelf && <button onClick={() => { if (confirm(`ถอนสิทธิ์แอดมินของ ${u.displayName || u.email} ?`)) afterAction(() => setUserRole(u.userId, 'user')); }} className="text-gray-400 hover:scale-110 transition-transform" title="ถอนแอดมิน"><ShieldOff size={14} /></button>
                             )}
+                            <button
+                              onClick={() => toggleUserAi(u)}
+                              className={`hover:scale-110 transition-transform ${aiConfigs.find(c => c.scope === 'user' && c.ownerRef === u.userId)?.enabled === false ? 'text-gray-500' : 'text-purple-400'}`}
+                              title={aiConfigs.find(c => c.scope === 'user' && c.ownerRef === u.userId)?.enabled === false ? 'เปิด AI ให้คนนี้' : 'ปิด AI ของคนนี้'}
+                            >
+                              <Bot size={14} />
+                            </button>
                             {!isSelf && (
                               <button onClick={() => { if (confirm(`ลบผู้ใช้ ${u.displayName || u.email} ถาวร?`)) afterAction(() => deleteUser(u.userId)); }} className="text-red-500 hover:scale-110 transition-transform" title="ลบ"><Trash2 size={14} /></button>
                             )}

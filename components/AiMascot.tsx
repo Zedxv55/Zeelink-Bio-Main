@@ -58,7 +58,7 @@ const setAiUsage = (uid: string, u: { windowStart: number; count: number }) => {
 
 export const AiMascot: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, aiConfigs } = useAuth();
   const [open, setOpen] = useState(false);
   const [hintIdx, setHintIdx] = useState(0);
   const [messages, setMessages] = useState<{ role: 'user' | 'bot'; text: string }[]>([
@@ -74,6 +74,15 @@ export const AiMascot: React.FC = () => {
   const inWindow = usage ? (Date.now() - usage.windowStart) < AI_WINDOW_MS : false;
   const used = inWindow && usage ? usage.count : 0;
   const remaining = AI_LIMIT_PER_HOUR - used;
+
+  // ===== สิทธิ์ AI ที่แอดมินกำหนด (จากตาราง ai_configs) =====
+  // global = ทุกคน (ดีฟอลต์เปิด) · user = บางคน (แอดมินปิด/เปิดรายบุคคล)
+  // ไม่แก้ Schema — ใช้ตาราง ai_configs ที่มีอยู่แล้ว (ดู supabase/ai-configs.sql)
+  const globalCfg = aiConfigs.find(c => c.scope === 'global');
+  const globalEnabled = globalCfg ? globalCfg.enabled : true;
+  const userCfg = user ? aiConfigs.find(c => c.scope === 'user' && c.ownerRef === user.id) : undefined;
+  // ปิดโดยแอดมิน: ปิดระดับเว็บ (global) หรือถูกปิดเฉพาะตัว (user)
+  const aiDisabledByAdmin = !globalEnabled || (userCfg ? !userCfg.enabled : false);
 
   // ป้องกัน setState หลัง unmount (เช่น ปิดแชทระหว่างรอ fetch)
   useEffect(() => {
@@ -103,7 +112,12 @@ export const AiMascot: React.FC = () => {
       if (!res.ok) throw new Error('bad');
       const data = await res.json();
       if (data?.error || !data?.reply) return simulatedAdmin(userText);
-      return String(data.reply).trim() || simulatedAdmin(userText);
+      const raw = String(data.reply).trim();
+      // ซ่อนข้อความตั้งค่า server (เช่น "กรุณาตั้งค่า AI_API_KEY") ไม่ให้ผู้ใช้เห็น
+      if (/AI_API_KEY|ยังไม่พร้อม|ไม่ได้ตั้งค่า/i.test(raw)) {
+        return 'ขออภัยครับ ระบบ AI ไม่พร้อมใช้งานชั่วคราว ลองใหม่อีกครั้งภายหลังนะครับ';
+      }
+      return raw || simulatedAdmin(userText);
     } catch {
       // ไม่มี endpoint (เช่น รัน local ไม่มี server) หรือเครือข่ายล้มเหลว → ใช้คำตอบสำรอง
       return simulatedAdmin(userText);
@@ -113,6 +127,17 @@ export const AiMascot: React.FC = () => {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || typing) return;
+
+    // 0) แอดมินปิด AI (ระดับเว็บ หรือเฉพาะตัว) → บล็อกพร้อมแจ้งสาเหตุ
+    if (aiDisabledByAdmin) {
+      setInput('');
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', text },
+        { role: 'bot', text: '🚫 ระบบ AI ถูกปิดการใช้งานโดยแอดมินชั่วคราว กรุณาติดต่อแอดมินหากต้องการใช้งาน' }
+      ]);
+      return;
+    }
 
     // 1) ไม่ล็อกอิน → ห้ามถาม ชวนล็อกอิน
     if (!user) {
@@ -233,9 +258,11 @@ export const AiMascot: React.FC = () => {
                 <p className="text-[10px] opacity-60">
                   {!user
                     ? 'เข้าสู่ระบบเพื่อคุยกับน้องซี'
-                    : user.role === 'admin'
-                      ? '♾️ แอดมิน: ไม่จำกัด'
-                      : `เหลือ ${remaining}/${AI_LIMIT_PER_HOUR} ครั้ง (ต่อชั่วโมง)`}
+                    : aiDisabledByAdmin
+                      ? '🔴 ปิดโดยแอดมิน'
+                      : user.role === 'admin'
+                        ? '♾️ แอดมิน: ไม่จำกัด'
+                        : `เหลือ ${remaining}/${AI_LIMIT_PER_HOUR} ครั้ง (ต่อชั่วโมง)`}
                 </p>
               </div>
             </div>
