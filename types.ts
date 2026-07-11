@@ -160,3 +160,14 @@ export interface Post {
   createdAt: string;
 }
 
+// ===== AI config (แอดมินคุม AI ต่อคน / ฟีด) =====
+export interface AiConfig {
+  id: string;
+  scope: 'global' | 'user' | 'feed';
+  ownerRef: string;        // 'global' | users.id | 'feed'
+  model: string;           // โมเดล Groq
+  persona?: string;        // บุคลิก/ชื่อเรียก AI
+  enabled: boolean;
+  updatedAt: string;
+}
+

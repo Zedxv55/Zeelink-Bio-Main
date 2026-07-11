@@ -60,6 +60,17 @@ export const Login: React.FC = () => {
     if (!ok) setError(`ไม่สามารถเข้าสู่ระบบด้วย ${provider === 'google' ? 'Google' : 'Facebook'} ได้ในขณะนี้`);
   };
 
+  // เช็คว่ามีบัญชีนี้ในระบบหรือไม่ (อ่าน users ด้วย anon — เปิดกว้างชั่วคราวตาม schema)
+  // ใช้เพื่อแจ้งข้อความเฉพาะเจาะจงตอนล็อกอินผิด
+  const checkAccountExists = async (email: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+      return !!data;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -78,7 +89,7 @@ export const Login: React.FC = () => {
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) { setError('ตั้งรหัสผ่านไม่สำเร็จ ' + error.message); return; }
         setInfo('✅ ตั้งรหัสผ่านใหม่สำเร็จแล้ว');
-        navigate('/dashboard');
+        navigate('/feed');
         return;
       }
 
@@ -86,15 +97,26 @@ export const Login: React.FC = () => {
         const { user, error: loginErr } = await login(email, password, remember);
         if (user) {
           localStorage.setItem('zeelink_remember_email', email);
-          navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+          navigate('/feed');
+        } else {
+          const isInvalidCreds = /invalid login credentials/i.test(loginErr || '');
+          if (isInvalidCreds) {
+            const exists = await checkAccountExists(email);
+            if (exists) {
+              setError('มีบัญชีนี้อยู่แล้วในระบบ แต่รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่าน หรือกด "ลืมรหัสผ่าน?" ด้านล่าง');
+            } else {
+              setError('ยังไม่มีบัญชีนี้กับ Zeelink ลองสมัครสมาชิกโดยกด "ยังไม่มีบัญชี? สมัครสมาชิก" ด้านล่าง');
+            }
+          } else {
+            setError(loginErr || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
+          }
         }
-        else setError(loginErr || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
       } else {
         const res = await register(email, password, name);
         if (res.user && !res.needsConfirmation) {
           localStorage.setItem('zeelink_remember_email', email);
           setInfo('สมัครสมาชิกเรียบร้อยแล้ว 🎉');
-          navigate(res.user.role === 'admin' ? '/admin' : '/dashboard');
+          navigate('/feed');
         } else if (res.needsConfirmation) {
           setInfo('📧 กรุณายืนยันอีเมลในกล่องจดหมายของคุณ ก่อนเข้าใช้งาน');
         } else {

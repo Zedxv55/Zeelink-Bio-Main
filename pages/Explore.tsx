@@ -95,6 +95,7 @@ export const Explore: React.FC = () => {
   const [sidebarUsers, setSidebarUsers] = useState<Profile[]>([]);
   const [filterMode, setFilterMode] = useState<'near' | 'province' | 'district'>('near');
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [showDemoBanner, setShowDemoBanner] = useState(true);
 
   useEffect(() => {
     refreshSidebarUsers();
@@ -437,6 +438,19 @@ export const Explore: React.FC = () => {
       </div>
 
       <div className={`flex-1 relative bg-gray-900 transition-all duration-300 ${sidebarOpen ? 'md:ml-80' : 'ml-0'} ${isDemo ? 'pointer-events-none blur-sm opacity-70' : ''}`}>
+         {/* Banner ชี้แจงความชัดเจน: ตอนนี้แสดงเฉพาะโปรไฟล์ตัวอย่าง (DEMO) */}
+         {showDemoBanner && !isDemo && (
+           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[55] w-[92vw] max-w-xl">
+             <div className="glass-card border-[var(--orange)] px-4 py-2.5 flex items-start space-x-2 shadow-xl">
+               <span className="text-base shrink-0">📍</span>
+               <p className="flex-1 text-[11px] leading-relaxed opacity-90">
+                 <span className="font-bold text-[var(--orange)]">DEMO:</span> ขณะนี้แผนที่แสดงเฉพาะโปรไฟล์ตัวอย่าง เพราะยังมีสมาชิกตั้งค่า "แสดงในแผนที่" น้อย —
+                 สมัครสมาชิกและเปิด "แสดงในแผนที่" ในหน้าแดชบอร์ด เพื่อให้โปรไฟล์คุณปรากฏที่นี่
+               </p>
+               <button onClick={() => setShowDemoBanner(false)} className="text-white/50 hover:text-white shrink-0" aria-label="ปิด"><X size={14} /></button>
+             </div>
+           </div>
+         )}
          {/* Vibrant map container */}
          <div ref={mapContainerRef} className="w-full h-full z-10 thai-map-vibrant" />
       </div>

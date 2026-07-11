@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role, AdminUserView, OnlineUser } from '../types';
+import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role, AdminUserView, OnlineUser, AiConfig } from '../types';
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
@@ -29,6 +29,15 @@ interface AuthContextType {
   createPost: (text: string, mediaUrl?: string, mediaType?: 'none' | 'image' | 'video') => Promise<Post | null>;
   toggleLikePost: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
+  uploadPostMedia: (file: File) => Promise<string | null>;
+  followUser: (followingId: string) => Promise<void>;
+  unfollowUser: (followingId: string) => Promise<void>;
+  isFollowing: (followingId: string) => boolean;
+  followingIds: string[];
+  aiConfigs: AiConfig[];
+  loadAiConfigs: () => Promise<void>;
+  saveAiConfig: (cfg: AiConfig) => Promise<void>;
   login: (email: string, password: string, remember?: boolean) => Promise<{ user: User | null; error?: string }>;
   loginWithOAuth: (provider: 'google' | 'facebook') => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<{ user: User | null; needsConfirmation?: boolean }>;
@@ -111,6 +120,16 @@ const DEFAULT_THEME = {
   enableGlassEffect: false
 };
 
+const mapAiConfig = (c: any): AiConfig => ({
+  id: c.id,
+  scope: c.scope,
+  ownerRef: c.owner_ref,
+  model: c.model,
+  persona: c.persona || '',
+  enabled: c.enabled,
+  updatedAt: c.updated_at
+});
+
 // สร้างแถวในตาราง public.users + profiles หากยังไม่มี
 // (แอปใช้ตาราง users แยกจาก auth.users และไม่มี trigger สร้างอัตโนมัติ
 //  จึงต้องสร้างเองทั้งตอนล็อกอินอีเมลและตอนล็อกอินผ่าน OAuth)
@@ -163,6 +182,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [allUsers, setAllUsers] = useState<AdminUserView[]>([]);
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+  const [aiConfigs, setAiConfigs] = useState<AiConfig[]>([]);
 
   // โหลด user+profile จากอีเมล (RLS อนุญาต authenticated อ่านแถวตัวเอง)
   const loadUserByEmail = async (email: string): Promise<User | null> => {
@@ -595,11 +616,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const now = Date.now();
     setPosts([
       {
-        id: 'seed-1', userId: 'seed-1', username: 'zeelink', displayName: 'ทีมงาน Zeelink',
-        photoUrl: 'https://ui-avatars.com/api/?name=Zeelink&background=FF7A2F&color=fff',
-        text: 'ยินดีต้อนรับสู่ฟีดของ Zeelink! 🎉 ที่นี่คุณสามารถแชร์ผลงาน โพสต์ หรือวิดีโอได้เหมือนในโซเชียล แต่จุดประสงค์คือโชว์พอร์ตของคนไทย #คนไทยไม่แพ้ใคร',
-        mediaType: 'none', likes: 128, likedByMe: false, comments: [
-          { id: 'c1', postId: 'seed-1', userId: 'u1', username: 'somchai', displayName: 'สมชาย', photoUrl: 'https://ui-avatars.com/api/?name=สมชาย&background=random', text: 'เจ๋งมากครับ!', createdAt: new Date(now - 3600000).toISOString() }
+        id: 'seed-welcome', userId: 'seed-zeetosit', username: 'zeetosit', displayName: 'Admin Zeetosit',
+        photoUrl: 'https://ui-avatars.com/api/?name=Admin+Zeetosit&background=FF7A2F&color=fff',
+        text: '🎉 ยินดีต้อนรับสู่ Zeelink! แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย เชื่อมครีเอเตอร์ทั่วประเทศ โชว์ผลงาน แชร์เรื่องราว และพบเพื่อนใหม่ได้ที่นี่เลย 🧡 #คนไทยไม่แพ้ใคร',
+        mediaUrl: 'https://picsum.photos/seed/zeelink-welcome/900/500',
+        mediaType: 'image', likes: 128, likedByMe: false, comments: [
+          { id: 'c1', postId: 'seed-welcome', userId: 'u1', username: 'somchai', displayName: 'สมชาย', photoUrl: 'https://ui-avatars.com/api/?name=สมชาย&background=random', text: 'เจ๋งมากครับ!', createdAt: new Date(now - 3600000).toISOString() }
         ], createdAt: new Date(now - 7200000).toISOString()
       },
       {
@@ -718,6 +740,105 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     ));
   };
 
+  // ===== อัปโหลดมีเดียลง Supabase Storage (bucket: posts-media) =====
+  // ใช้สำหรับรูป/วิดีโอในฟีด (ไฟล์ใหญ่ได้ — ดู storage-posts-media.sql)
+  const uploadPostMedia = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const safeExt = ext || 'bin';
+    const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+    try {
+      const { data, error } = await supabase.storage
+        .from('posts-media')
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('posts-media').getPublicUrl(data.path);
+      return urlData.publicUrl;
+    } catch (e) {
+      console.error('Upload post media error:', e);
+      return null; // ถ้ายังไม่มี bucket (รัน storage-posts-media.sql ก่อน) → คืน null ให้ UI แจ้งเตือน
+    }
+  };
+
+  // ===== ระบบติดตาม (Follow) =====
+  const followUser = async (followingId: string) => {
+    if (!user) return;
+    const already = followingIds.includes(followingId);
+    // optimistic UI
+    setFollowingIds(prev => already ? prev.filter(id => id !== followingId) : [...prev, followingId]);
+    try {
+      if (already) {
+        await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', followingId);
+      } else {
+        await supabase.from('follows').insert([{ follower_id: user.id, following_id: followingId, status: 'approved' }]);
+      }
+    } catch (e) {
+      console.error('Follow error:', e);
+      // ถ้าเกิดข้อผิดพลาด → ย้อนสถานะ
+      setFollowingIds(prev => already ? [...prev, followingId] : prev.filter(id => id !== followingId));
+    }
+  };
+
+  const unfollowUser = async (followingId: string) => {
+    if (!user) return;
+    setFollowingIds(prev => prev.filter(id => id !== followingId));
+    try {
+      await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', followingId);
+    } catch (e) {
+      console.error('Unfollow error:', e);
+    }
+  };
+
+  const isFollowing = (followingId: string): boolean => followingIds.includes(followingId);
+
+  // ===== แอดมินลบโพสต์ในฟีด =====
+  const deletePost = async (postId: string) => {
+    try {
+      await supabase.from('post_comments').delete().eq('post_id', postId);
+      const { error } = await supabase.from('posts').delete().eq('id', postId);
+      if (error) throw error;
+    } catch (e) {
+      console.error('Delete post error:', e);
+    }
+    setPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
+  // ===== AI configs (แอดมินคุม AI ต่อคน / ฟีด) =====
+  const loadAiConfigs = async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase.from('ai_configs').select('*');
+      if (error) throw error;
+      setAiConfigs((data || []).map(mapAiConfig));
+    } catch {
+      // ยังไม่มีตาราง (รัน ai-configs.sql ก่อน) → ใช้ค่าเริ่มต้นว่าง
+    }
+  };
+
+  const saveAiConfig = async (cfg: AiConfig): Promise<void> => {
+    try {
+      const { data, error } = await supabase.from('ai_configs').upsert({
+        id: cfg.id || undefined,
+        scope: cfg.scope,
+        owner_ref: cfg.ownerRef,
+        model: cfg.model,
+        persona: cfg.persona,
+        enabled: cfg.enabled,
+        updated_at: new Date().toISOString()
+      }).select().single();
+      if (error) throw error;
+      if (data) {
+        const mapped = mapAiConfig(data);
+        setAiConfigs(prev => {
+          const i = prev.findIndex(c => c.id === mapped.id);
+          if (i >= 0) { const n = [...prev]; n[i] = mapped; return n; }
+          return [...prev, mapped];
+        });
+      }
+    } catch (e) {
+      console.error('Save AI config error:', e);
+    }
+  };
+
   const askAiStylist = () => {
     const presets = [
       { backgroundColor: '#0f172a', textColor: '#38bdf8', buttonColor: '#ec4899', fontFamily: 'Chakra Petch', layout: 'glass' as const, enableGlassEffect: true },
@@ -811,6 +932,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // โหลดรายชื่อที่ผู้ใช้ติดตาม (follows) ทันทีที่ล็อกอิน
+  useEffect(() => {
+    if (!user) { setFollowingIds([]); return; }
+    let cancel = false;
+    (async () => {
+      try {
+        const { data } = await supabase.from('follows').select('following_id').eq('follower_id', user.id);
+        if (!cancel && data) setFollowingIds(data.map((r: any) => r.following_id));
+      } catch {
+        // ยังไม่มีตาราง follows (รัน follows.sql ก่อน) → ปล่อยว่าง
+      }
+    })();
+    return () => { cancel = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   // Initialize: sync auth session + load public data
   useEffect(() => {
     const initializeData = async () => {
@@ -862,6 +999,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // 5. Feed posts
         await loadPosts();
 
+        // 6. AI configs (แอดมินคุม AI ต่อคน / ฟีด)
+        loadAiConfigs();
+
         if (usersList.length === 0) simulateUsers();
       } catch (error) {
         console.error('Initialization error:', error);
@@ -911,11 +1051,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user, profile, usersList, isLoading, activePopup, popups, questions, posts,
-    onlineUsers, allUsers,
+    onlineUsers, allUsers, followingIds, aiConfigs,
     login, loginWithOAuth, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser, unbanUser,
     setUserRole, simulateUsers, backupData, createPopup, togglePopup, deletePopup,
     closeActivePopup, addQuestion, voteQuestion, askAiStylist,
-    loadPosts, createPost, toggleLikePost, addComment, loadAllUsers
+    loadPosts, createPost, toggleLikePost, addComment, deletePost, uploadPostMedia,
+    followUser, unfollowUser, isFollowing, loadAiConfigs, saveAiConfig, loadAllUsers
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

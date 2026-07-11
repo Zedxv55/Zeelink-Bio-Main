@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Trash2, Ban, ShieldCheck, ShieldOff, Download, Users, Edit3, Database, Link as LinkIcon, Circle, Wifi } from 'lucide-react';
+import { Trash2, Ban, ShieldCheck, ShieldOff, Download, Users, Edit3, Database, Link as LinkIcon, Circle, Wifi, Bot, Newspaper } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
-import { SystemPopup } from '../types';
+import { SystemPopup, AiConfig } from '../types';
 
 const fmtLastSeen = (iso?: string | null): string => {
   if (!iso) return '—';
@@ -20,20 +20,76 @@ export const AdminPanel: React.FC = () => {
   const {
     user, deleteUser, banUser, unbanUser, setUserRole,
     simulateUsers, backupData, popups, createPopup, togglePopup, deletePopup,
-    onlineUsers, allUsers, loadAllUsers
+    onlineUsers, allUsers, loadAllUsers,
+    posts, deletePost, aiConfigs, loadAiConfigs, saveAiConfig
   } = useAuth();
-  const [activeTab, setActiveTab] = useState<'users' | 'popups' | 'links' | 'backup'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'popups' | 'links' | 'backup' | 'ai' | 'feed'>('users');
 
   // Popup Form
   const [popupTitle, setPopupTitle] = useState('');
   const [popupImage, setPopupImage] = useState('');
   const [popupLink, setPopupLink] = useState('');
 
+  // AI per-person: สมาชิกที่เลือก
+  const [selectedUserId, setSelectedUserId] = useState('');
+
   // โหลดรายชื่อผู้ใช้ทั้งหมดเมื่อเข้าแท็บผู้ใช้
   useEffect(() => {
     if (activeTab === 'users') loadAllUsers();
+    if (activeTab === 'ai') loadAiConfigs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  // ฟอร์มแก้ AI config (global / user / feed)
+  const AiConfigEditor: React.FC<{
+    title?: string;
+    scope: 'global' | 'user' | 'feed';
+    ownerRef: string;
+    config?: AiConfig;
+    onSave: (c: AiConfig) => void;
+  }> = ({ title, scope, ownerRef, config, onSave }) => {
+    const [model, setModel] = useState(config?.model || 'llama-3.3-70b-versatile');
+    const [persona, setPersona] = useState(config?.persona || '');
+    const [enabled, setEnabled] = useState(config?.enabled ?? true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+      setModel(config?.model || 'llama-3.3-70b-versatile');
+      setPersona(config?.persona || '');
+      setEnabled(config?.enabled ?? true);
+    }, [config]);
+
+    const MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
+
+    const handleSave = () => {
+      setSaving(true);
+      onSave({ id: config?.id || '', scope, ownerRef, model, persona, enabled, updatedAt: new Date().toISOString() });
+      setSaving(false);
+    };
+
+    return (
+      <div className="glass-card p-6 border-[var(--orange)]">
+        {title && <h3 className="font-bold mb-3">{title}</h3>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label className="text-xs opacity-60 flex flex-col">
+            โมเดล AI
+            <select value={model} onChange={e => setModel(e.target.value)} className="p-2 rounded-lg mt-1 text-white bg-black/30">
+              {MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </label>
+          <label className="text-xs opacity-60 flex items-end gap-2 pb-2">
+            เปิดใช้งาน AI
+            <input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} className="w-5 h-5" style={{ accentColor: 'var(--orange)' }} />
+          </label>
+          <label className="text-xs opacity-60 flex flex-col md:col-span-2">
+            บุคลิก / ชื่อเรียก AI
+            <input value={persona} onChange={e => setPersona(e.target.value)} placeholder="เช่น แอดมินจำลองใจดีของ Zeelink" className="p-2 rounded-lg mt-1" />
+          </label>
+        </div>
+        <div className="mt-4"><Button variant="primary" size="sm" onClick={handleSave} loading={saving}>บันทึกการตั้งค่า</Button></div>
+      </div>
+    );
+  };
 
   if (!user || user.role !== 'admin') return <Navigate to="/login" replace />;
 
@@ -68,6 +124,8 @@ export const AdminPanel: React.FC = () => {
               <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-[var(--orange)] text-white' : 'hover:bg-white/10'}`}>Users</button>
               <button onClick={() => setActiveTab('popups')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'popups' ? 'bg-[var(--pink)] text-white' : 'hover:bg-white/10'}`}>Popups</button>
               <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'links' ? 'bg-orange-600 text-white' : 'hover:bg-white/10'}`}>Links</button>
+              <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-purple-600 text-white' : 'hover:bg-white/10'}`}><Bot size={13} className="inline mr-1" />AI</button>
+              <button onClick={() => setActiveTab('feed')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'feed' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'}`}><Newspaper size={13} className="inline mr-1" />Feed</button>
               <button onClick={() => setActiveTab('backup')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'backup' ? 'bg-green-600 text-white' : 'hover:bg-white/10'}`}>Backup</button>
             </div>
           </div>
@@ -222,6 +280,62 @@ export const AdminPanel: React.FC = () => {
               <Database size={48} className="mx-auto text-green-500 mb-4" />
               <h3 className="text-xl font-bold">System Backup</h3>
               <div className="mt-6 flex justify-center"><Button variant="primary" size="lg" leftIcon={<Download size={20} />} onClick={backupData} style={{ background: 'var(--green)' }}>Download Full Backup (.JSON)</Button></div>
+            </div>
+          )}
+
+          {activeTab === 'ai' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="glass-card p-4 border-purple-500/40">
+                <h3 className="font-bold mb-1 flex items-center gap-2"><Bot size={18} className="text-purple-400" />ควบคุม AI (แอดมิน)</h3>
+                <p className="text-xs opacity-60">ตั้งค่าโมเดล / บุคลิก AI ระดับเว็บ และต่อคนแต่ละคนได้</p>
+              </div>
+
+              <AiConfigEditor
+                title="⚙️ การตั้งค่า AI ระดับเว็บ (Global)"
+                scope="global"
+                ownerRef="global"
+                config={aiConfigs.find(c => c.scope === 'global')}
+                onSave={saveAiConfig}
+              />
+
+              <div className="glass-card p-6 border-[var(--orange)]">
+                <h3 className="font-bold mb-3">🤖 ตั้งค่า AI ต่อคน</h3>
+                <p className="text-xs opacity-60 mb-3">เลือกสมาชิกเพื่อกำหนดโมเดล / บุคลิก AI เฉพาะบุคคล (แอดมินคุมได้)</p>
+                <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} className="p-2 rounded-lg w-full mb-3 text-white bg-black/30">
+                  <option value="">-- เลือกสมาชิก --</option>
+                  {allUsers.filter(u => u.userId).map(u => (
+                    <option key={u.userId} value={u.userId}>{u.displayName || u.email} ({u.role})</option>
+                  ))}
+                </select>
+                {selectedUserId && (
+                  <AiConfigEditor
+                    scope="user"
+                    ownerRef={selectedUserId}
+                    config={aiConfigs.find(c => c.scope === 'user' && c.ownerRef === selectedUserId)}
+                    onSave={saveAiConfig}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'feed' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="glass-card p-4 border-blue-500/40">
+                <h3 className="font-bold mb-1 flex items-center gap-2"><Newspaper size={18} className="text-blue-400" />จัดการฟีด ({posts.length})</h3>
+                <p className="text-xs opacity-60">ลบโพสต์ที่ไม่เหมาะสม เพื่อควบคุมเนื้อหาในฟีด</p>
+              </div>
+              {posts.map(p => (
+                <div key={p.id} className="glass-card p-4 flex items-start gap-3 border-[var(--orange)]/20">
+                  <img src={p.photoUrl} className="w-9 h-9 rounded-full object-cover border border-white/20" alt="" onError={e => (e.currentTarget.style.visibility = 'hidden')} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold">{p.displayName} <span className="opacity-50 font-normal">@{p.username}</span></p>
+                    <p className="text-xs opacity-70 truncate">{p.text || (p.mediaType !== 'none' ? '[' + p.mediaType + ']' : 'ว่าง')}</p>
+                  </div>
+                  <button onClick={() => { if (confirm(`ลบโพสต์ของ ${p.displayName}?`)) deletePost(p.id); }} className="text-red-500 hover:scale-110 transition-transform" title="ลบโพสต์"><Trash2 size={16} /></button>
+                </div>
+              ))}
+              {posts.length === 0 && <p className="text-center text-sm opacity-60 py-8">ยังไม่มีโพสต์ในฟีด</p>}
             </div>
           )}
         </div>

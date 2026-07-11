@@ -45,6 +45,16 @@ npm run dev      # เปิดเซิร์ฟเวอร์ → http://loca
   - รัน `supabase/admin-online.sql` ครั้งเดียว เพื่อเปิด RLS ให้แอดมินแก้/ลบผู้ใช้ได้ + เพิ่มคอลัมน์ `last_seen_at` + RPC `touch_presence()`
   - ถ้ายังไม่รัน SQL แอดมินยังดู "ออนไลน์ตอนนี้" ผ่าน Realtime ได้เลย (ไม่ต้องรัน SQL)
 
+### ฟีเจอร์ที่ต้องรัน SQL เพิ่มเติม (ไฟล์อยู่ใน `supabase/`)
+ทุกไฟล์ **idempotent** (รันซ้ำได้ไม่ error) — รันทีละไฟล์ใน Supabase Dashboard → SQL Editor → New query → paste → Run
+- `follows.sql` — ระบบติดตาม (Follow) หน้าโปรไฟล์
+- `ai-configs.sql` — แอดมินคุม AI ต่อคน / ระดับเว็บ (แท็บ AI ใน AdminPanel)
+- `storage-posts-media.sql` — พื้นที่เก็บรูป/วิดีโอในฟีด (bucket `posts-media`)
+- `reports.sql` — ระบบรายงานเนื้อหา
+- `profile-visibility.sql` — โหมด Only / สาธารณะ
+- `feed-media-policy.sql` — RLS โพสต์/คอมเมนต์
+- ถ้ายังไม่รัน SQL เหล่านี้ แอปจะทำงานแบบจำลอง (in-memory) ไม่พังหน้าจอ
+
 ## ฟีเจอร์ใหม่ (อัปเดตล่าสุด)
 - **Pixel Mascot** — ตัวการ์ตูนพิกเซลขับตามเมาส์ คลิกเพื่อให้ทักทาย (หน้าแรก + ฟีด)
 - **หน้าแรกมีชีวิตชีวา** — อนิเมชั่นเลื่อนปรากฏ (scroll-reveal) + องค์ประกอบลอยตัว

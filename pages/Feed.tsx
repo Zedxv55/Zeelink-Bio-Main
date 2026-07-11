@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
@@ -27,16 +27,34 @@ const timeAgo = (iso: string): string => {
 };
 
 export const Feed: React.FC = () => {
-  const { user, profile, posts, createPost, toggleLikePost, addComment } = useAuth();
+  const { user, profile, posts, createPost, toggleLikePost, addComment, uploadPostMedia } = useAuth();
   const navigate = useNavigate();
 
   const [text, setText] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaType, setMediaType] = useState<'none' | 'image' | 'video'>('none');
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [commentFor, setCommentFor] = useState<string | null>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset เพื่อให้เลือกไฟล์เดิมซ้ำได้
+    if (!file) return;
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    if (!isImage && !isVideo) { setUploadError('รองรับเฉพาะไฟล์รูปภาพหรือวิดีโอเท่านั้น'); return; }
+    setUploadError('');
+    setUploading(true);
+    const url = await uploadPostMedia(file);
+    setUploading(false);
+    if (url) { setMediaUrl(url); setMediaType(isVideo ? 'video' : 'image'); }
+    else setUploadError('อัปโหลดไม่สำเร็จ (อาจยังไม่มีพื้นที่เก็บไฟล์ — แอดมินต้องรัน supabase/storage-posts-media.sql ก่อน)');
+  };
 
   // รีเซ็ต media type เมื่อพิมพ์ URL
   useEffect(() => {
@@ -97,17 +115,21 @@ export const Feed: React.FC = () => {
                   )}
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex gap-1">
-                      <button onClick={() => { const u = prompt('วาง URL รูปภาพ'); if (u) setMediaUrl(u); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-white/10" style={{ color: palette.blue }}>
-                        <ImageIcon size={16} /> รูป
+                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-white/10 disabled:opacity-50" style={{ color: palette.blue }}>
+                        <ImageIcon size={16} /> {uploading ? 'กำลังอัปโหลด...' : 'รูป/วิดีโอ'}
                       </button>
-                      <button onClick={() => { const u = prompt('วาง URL วิดีโอ (mp4/webm)'); if (u) { setMediaUrl(u); setMediaType('video'); } }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-white/10" style={{ color: palette.pink }}>
-                        <Video size={16} /> วิดีโอ
+                      <button type="button" onClick={() => { const u = prompt('วาง URL รูปภาพหรือวิดีโอ'); if (u) { setMediaUrl(u); setMediaType(detectMedia(u).type); } }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-white/10" style={{ color: palette.pink }}>
+                        ลิงก์ URL
                       </button>
+                      <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFile} />
                     </div>
-                    <Button variant="primary" size="sm" onClick={handlePost} loading={submitting} disabled={!text.trim()} leftIcon={<Send size={14} />}>
+                    <Button variant="primary" size="sm" onClick={handlePost} loading={submitting} disabled={!text.trim() && !mediaUrl} leftIcon={<Send size={14} />}>
                       โพสต์
                     </Button>
                   </div>
+                  {uploadError && (
+                    <p className="text-[11px] mt-2" style={{ color: palette.pink }}>{uploadError}</p>
+                  )}
                 </div>
               </div>
             </div>

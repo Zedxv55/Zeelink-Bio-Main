@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Profile as ProfileType } from '../types';
-import { MapPin, Heart, Eye, Calendar, Map as MapIcon, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Heart, Eye, Calendar, Map as MapIcon, Image as ImageIcon, UserPlus, UserCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { fonts, fontSize, palette } from '../lib/designTokens';
 import { detectPlatform, isValidUrl } from '../lib/social';
@@ -37,9 +37,19 @@ const mapProfile = (p: any): ProfileType => ({
 
 export const ProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>();
-  const { usersList, toggleLike } = useAuth();
+  const { usersList, toggleLike, followUser, isFollowing, user } = useAuth();
   const [profile, setProfile] = useState<ProfileType | null>(null);
   const [loading, setLoading] = useState(true);
+  // กดใจรูปภาพในพอร์ต (เซสชันนี้) — ยังไม่มีตารางแยก จึงเก็บฝั่ง client
+  const [likedImages, setLikedImages] = useState<Set<number>>(new Set());
+  const canFollow = !!user && profile && user.id !== profile.userId;
+  const toggleImageLike = (i: number) => {
+    setLikedImages(prev => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
 
   useEffect(() => {
     let cancel = false;
@@ -127,13 +137,22 @@ export const ProfilePage: React.FC = () => {
                  </h3>
                  <div className="grid grid-cols-3 gap-2">
                    {profile.portfolioImages.map((img, i) => (
-                     <img
-                       key={i}
-                       src={img}
-                       alt={`result ${i + 1}`}
-                       className="w-full h-28 object-cover rounded-xl border border-current/10 hover:scale-105 transition-transform cursor-pointer"
-                       onClick={() => window.open(img, '_blank', 'noopener,noreferrer')}
-                     />
+                     <div key={i} className="relative group">
+                       <img
+                         src={img}
+                         alt={`result ${i + 1}`}
+                         className="w-full h-28 object-cover rounded-xl border border-current/10 hover:scale-105 transition-transform cursor-pointer"
+                         onClick={() => window.open(img, '_blank', 'noopener,noreferrer')}
+                       />
+                       <button
+                         onClick={() => toggleImageLike(i)}
+                         aria-label="กดใจรูปนี้"
+                         className="absolute bottom-1 right-1 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/40 text-white text-[10px] opacity-80 hover:opacity-100 transition-opacity"
+                       >
+                         <Heart size={12} className={likedImages.has(i) ? 'fill-pink-500 text-pink-500' : ''} />
+                         {likedImages.has(i) ? 'แล้ว' : 'ใจ'}
+                       </button>
+                     </div>
                    ))}
                  </div>
                </div>
@@ -156,6 +175,15 @@ export const ProfilePage: React.FC = () => {
                  <button onClick={() => toggleLike(profile.id)} className="flex items-center space-x-2 px-6 py-3 rounded-full font-bold shadow-lg hover:transform hover:scale-105 transition-all" style={{ backgroundColor: theme.buttonColor, color: theme.backgroundColor === '#000000' ? '#fff' : '#fff' }}>
                      <Heart size={18} /> <span>ถูกใจ</span>
                  </button>
+                 {canFollow && (
+                   <button
+                     onClick={() => followUser(profile.userId)}
+                     className="flex items-center space-x-2 px-6 py-3 rounded-full font-bold shadow-lg border border-current hover:bg-black/5 transition-all"
+                   >
+                     {isFollowing(profile.userId) ? <UserCheck size={18} /> : <UserPlus size={18} />}
+                     <span>{isFollowing(profile.userId) ? 'กำลังติดตาม' : 'ติดตาม'}</span>
+                   </button>
+                 )}
                  <button onClick={() => window.open(`/explore`, '_blank')} className="flex items-center space-x-2 px-6 py-3 rounded-full font-bold shadow-lg border border-current hover:bg-black/5 transition-all">
                      <MapIcon size={18} /> <span>ดูบนแผนที่</span>
                  </button>

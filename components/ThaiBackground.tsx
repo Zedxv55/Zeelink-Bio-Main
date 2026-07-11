@@ -49,18 +49,18 @@ export const ThaiBackground: React.FC<ThaiBackgroundProps> = ({ onTagClick }) =>
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#FAF8F3] dark:bg-[#1a1a1a]">
       <style>{`
         @keyframes multiFloat {
-          0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-          10% { opacity: 0.4; }
-          50% { transform: translate(15vw, -10vh) rotate(5deg); opacity: 0.6; }
-          90% { opacity: 0.4; }
-          100% { transform: translate(-10vw, 15vh) rotate(-5deg); opacity: 0; }
+          0% { transform: translate(0, 0) rotate(0deg); opacity: 0.55; }
+          25% { opacity: 0.85; }
+          50% { transform: translate(15vw, -10vh) rotate(5deg); opacity: 0.9; }
+          75% { opacity: 0.85; }
+          100% { transform: translate(-10vw, 15vh) rotate(-5deg); opacity: 0.55; }
         }
         .glow-text {
           transition: text-shadow 2s ease;
         }
         @media (prefers-reduced-motion: reduce) {
           .glow-text {
-            opacity: 0.5 !important;
+            opacity: 0.6 !important;
             animation: none !important;
           }
         }
