@@ -35,7 +35,7 @@ const App: React.FC = () => {
         linkUrl={activePopup?.linkUrl}
         linkLabel="ดูรายละเอียด"
       >
-        {activePopup?.content && <div dangerouslySetInnerHTML={{ __html: activePopup.content }} />}
+        {activePopup?.content && <div>{activePopup.content}</div>}
       </Modal>
 
       <Routes>
