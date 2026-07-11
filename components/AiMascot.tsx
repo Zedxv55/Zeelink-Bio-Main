@@ -38,6 +38,24 @@ const simulatedAdmin = (text: string): string => {
   return 'รับทราบครับ! ฉันช่วยเรื่องพอร์ตโฟลิโอ แผนที่ ฟีด และการล็อกอินได้ ลองถามหรือสั่งการได้เลยนะ 😊';
 };
 
+// ===== สิทธิ์การใช้งาน AI (น้องซี) =====
+// - ไม่ล็อกอิน → ห้ามถาม (ชวนล็อกอิน)
+// - สมาชิกทั่วไป → จำกัด 20 ครั้ง / ชั่วโมง (คูลดาวน์ 1 ชม.)
+// - แอดมิน → ไม่จำกัด
+const AI_LIMIT_PER_HOUR = 20;
+const AI_WINDOW_MS = 60 * 60 * 1000; // 1 ชั่วโมง
+const aiUsageKey = (uid: string) => `zeelink_ai_usage_${uid}`;
+const getAiUsage = (uid: string): { windowStart: number; count: number } => {
+  try {
+    const raw = localStorage.getItem(aiUsageKey(uid));
+    if (raw) return JSON.parse(raw) as { windowStart: number; count: number };
+  } catch { /* noop */ }
+  return { windowStart: 0, count: 0 };
+};
+const setAiUsage = (uid: string, u: { windowStart: number; count: number }) => {
+  try { localStorage.setItem(aiUsageKey(uid), JSON.stringify(u)); } catch { /* noop */ }
+};
+
 export const AiMascot: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -50,6 +68,12 @@ export const AiMascot: React.FC = () => {
   const [typing, setTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
+
+  // โควต้าสำหรับสมาชิกทั่วไป (แอดมินไม่นับ) — เก็บฝั่ง client ต่อ user.id
+  const usage = user && user.role !== 'admin' ? getAiUsage(user.id) : null;
+  const inWindow = usage ? (Date.now() - usage.windowStart) < AI_WINDOW_MS : false;
+  const used = inWindow && usage ? usage.count : 0;
+  const remaining = AI_LIMIT_PER_HOUR - used;
 
   // ป้องกัน setState หลัง unmount (เช่น ปิดแชทระหว่างรอ fetch)
   useEffect(() => {
@@ -89,6 +113,38 @@ export const AiMascot: React.FC = () => {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || typing) return;
+
+    // 1) ไม่ล็อกอิน → ห้ามถาม ชวนล็อกอิน
+    if (!user) {
+      setInput('');
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', text },
+        { role: 'bot', text: '🔒 กรุณาเข้าสู่ระบบก่อนครับ น้องซีจะตอบคำถามได้เฉพาะสมาชิกที่ล็อกอินเท่านั้น' }
+      ]);
+      return;
+    }
+
+    // 2) สมาชิกทั่วไป → จำกัด 20 ครั้ง / ชั่วโมง (คูลดาวน์ 1 ชม.)
+    if (user.role !== 'admin') {
+      const u = getAiUsage(user.id);
+      const expired = (Date.now() - u.windowStart) >= AI_WINDOW_MS;
+      const cur = expired ? { windowStart: Date.now(), count: 0 } : u;
+      if (cur.count >= AI_LIMIT_PER_HOUR) {
+        const waitMin = Math.max(1, Math.ceil((AI_WINDOW_MS - (Date.now() - cur.windowStart)) / 60000));
+        setInput('');
+        setMessages(prev => [
+          ...prev,
+          { role: 'user', text },
+          { role: 'bot', text: `ขออภัยครับ คุณใช้ครบ ${AI_LIMIT_PER_HOUR} ครั้งแล้ว กรุณารอประมาณ ${waitMin} นาที จึงจะถามได้ใหม่ (จำกัด ${AI_LIMIT_PER_HOUR} ครั้ง/ชั่วโมง)` }
+        ]);
+        return;
+      }
+      cur.count += 1;
+      setAiUsage(user.id, cur);
+    }
+
+    // 3) แอดมิน → ไม่จำกัด ใช้งานได้ทุกอย่าง
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text }]);
     setTyping(true);
@@ -174,11 +230,31 @@ export const AiMascot: React.FC = () => {
               <Sparkles size={18} style={{ color: 'var(--orange)' }} />
               <div>
                 <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>น้องซี · แอดมินจำลอง</p>
-                <p className="text-[10px] opacity-60">ถามหรือสั่งการได้เลย</p>
+                <p className="text-[10px] opacity-60">
+                  {!user
+                    ? 'เข้าสู่ระบบเพื่อคุยกับน้องซี'
+                    : user.role === 'admin'
+                      ? '♾️ แอดมิน: ไม่จำกัด'
+                      : `เหลือ ${remaining}/${AI_LIMIT_PER_HOUR} ครั้ง (ต่อชั่วโมง)`}
+                </p>
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="opacity-60 hover:opacity-100"><X size={18} style={{ color: 'var(--text-primary)' }} /></button>
           </div>
+
+          {/* ไม่ล็อกอิน → ชวนล็อกอิน */}
+          {!user && (
+            <div className="px-3 py-2 border-b text-center" style={{ borderColor: 'var(--glass-border)' }}>
+              <p className="text-[11px] opacity-70 mb-1.5">🔒 เข้าสู่ระบบเพื่อถามน้องซีได้</p>
+              <button
+                onClick={() => navigate('/login')}
+                className="px-4 py-1.5 rounded-full text-[12px] font-bold text-white"
+                style={{ background: 'var(--orange)' }}
+              >
+                เข้าสู่ระบบ
+              </button>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ background: 'var(--bg-secondary)' }}>
