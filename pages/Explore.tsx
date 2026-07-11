@@ -105,14 +105,43 @@ export const Explore: React.FC = () => {
     }
   }, [refreshCooldown]);
 
+  // หาพิกัดจังหวัดจาก THAI_REGIONS (ไม่มี jitter)
+  const provinceCenter = (name: string): { lat: number; lng: number } | null => {
+    for (const region of THAI_REGIONS) {
+      const p = region.provinces.find(pr => pr.name === name);
+      if (p) return { lat: p.lat, lng: p.lng };
+    }
+    return null;
+  };
+
+  // ระยะ haversine (km) — อัลกอริทึมเรียง "คนใกล้คุณ" เร็ว O(n log n)
+  const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }): number => {
+    const R = 6371;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  };
+
+  // เรียง sidebar ตามความใกล้ชิด: จังหวัดเดียวกันก่อน → ตามระยะห่างจากจังหวัดผู้ใช้ → ยอดถูกใจ
   const refreshSidebarUsers = () => {
-      let potentialUsers = usersList.filter(u => u.showOnExplore);
-      if (userProfile?.province) {
-          const sameProv = potentialUsers.filter(u => u.province === userProfile.province);
-          if (sameProv.length > 0) potentialUsers = sameProv;
-      }
-      const shuffled = [...potentialUsers].sort(() => 0.5 - Math.random());
-      setSidebarUsers(shuffled.slice(0, 15));
+      const potentialUsers = usersList.filter(u => u.showOnExplore);
+      const me = userProfile?.province ? provinceCenter(userProfile.province) : null;
+      const sorted = [...potentialUsers].sort((a, b) => {
+        if (userProfile?.province) {
+          const am = a.province === userProfile.province ? 0 : 1;
+          const bm = b.province === userProfile.province ? 0 : 1;
+          if (am !== bm) return am - bm;
+        }
+        if (me) {
+          const ca = provinceCenter(a.province);
+          const cb = provinceCenter(b.province);
+          if (ca && cb) return haversineKm(me, ca) - haversineKm(me, cb);
+        }
+        return (b.likes || 0) - (a.likes || 0);
+      });
+      setSidebarUsers(sorted.slice(0, 15));
   };
 
   const handleManualRefresh = () => {
