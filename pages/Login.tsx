@@ -111,7 +111,7 @@ export const Login: React.FC = () => {
       <ThaiBackground />
 
       {/* ข้อความลอยเด้งไปมา (คำกวนๆ ช้างกูอยู่ไหน ฯลฯ) — ชีวิตชีวา ไม่หน่วง */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
         {FLOAT_POS.map((p, i) => (
           <span
             key={i}
@@ -141,12 +141,12 @@ export const Login: React.FC = () => {
         </p>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--orange-soft)', color: 'var(--orange-deep)' }}>
+          <div className="mb-4 p-3 rounded-lg text-sm" role="alert" style={{ background: 'var(--orange-soft)', color: 'var(--orange-deep)' }}>
             {error}
           </div>
         )}
         {info && (
-          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--glass-border)', color: 'var(--text-secondary)' }}>
+          <div className="mb-4 p-3 rounded-lg text-sm" aria-live="polite" style={{ background: 'var(--glass-border)', color: 'var(--text-secondary)' }}>
             {info}
           </div>
         )}
@@ -158,6 +158,7 @@ export const Login: React.FC = () => {
               <input
                 type="text"
                 placeholder="ชื่อของคุณ"
+                aria-label="ชื่อของคุณ"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
@@ -173,6 +174,7 @@ export const Login: React.FC = () => {
               <input
                 type="email"
                 placeholder="อีเมล"
+                aria-label="อีเมล"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
@@ -188,6 +190,7 @@ export const Login: React.FC = () => {
               <input
                 type="password"
                 placeholder={mode === 'setpw' ? 'รหัสผ่านใหม่' : 'รหัสผ่าน'}
+                aria-label={mode === 'setpw' ? 'รหัสผ่านใหม่' : 'รหัสผ่าน'}
                 value={mode === 'setpw' ? newPassword : password}
                 onChange={(e) => mode === 'setpw' ? setNewPassword(e.target.value) : setPassword(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg outline-none"
