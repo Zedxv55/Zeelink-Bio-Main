@@ -386,13 +386,13 @@ export const Explore: React.FC = () => {
       {/* Always-visible sidebar toggle (works on mobile too) */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed top-20 left-2 z-40 w-8 h-16 bg-white dark:bg-gray-800 border rounded-r-xl flex items-center justify-center shadow-md"
+        className="fixed top-20 left-2 md:left-[88px] lg:left-[256px] z-40 w-8 h-16 bg-white dark:bg-gray-800 border rounded-r-xl flex items-center justify-center shadow-md"
       >
         {sidebarOpen ? <ChevronLeft size={20} className="text-gray-500"/> : <ChevronRight size={20} className="text-gray-500"/>}
       </button>
 
       {/* Sidebar List (Smart Glass Sidebar) */}
-      <div className={`glass-card fixed left-2 top-20 bottom-2 z-30 w-[85vw] max-w-sm md:w-80 transition-transform duration-300 flex flex-col border-[var(--orange)] ${sidebarOpen ? 'translate-x-0' : '-translate-x-[110%]'} ${isDemo ? 'pointer-events-none blur-sm opacity-70' : ''}`}>
+      <div className={`glass-card fixed left-2 md:left-[88px] lg:left-[256px] top-20 bottom-2 z-30 w-[85vw] max-w-sm md:w-80 transition-transform duration-300 flex flex-col border-[var(--orange)] ${sidebarOpen ? 'translate-x-0' : '-translate-x-[110%]'} ${isDemo ? 'pointer-events-none blur-sm opacity-70' : ''}`}>
 
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-center">
