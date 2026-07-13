@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import { Logo } from '../components/Logo';
 import { DemoOverlay } from '../components/DemoOverlay';
+import { haversineKm } from '../lib/ranking';
 
 const center = { lat: 13.7563, lng: 100.5018 };
 
@@ -73,7 +74,7 @@ const PrivacyNotice = ({ onClose }: { onClose: () => void }) => (
 );
 
 export const Explore: React.FC = () => {
-  const { usersList, profile: userProfile, toggleLike, user } = useAuth();
+  const { usersList, profile: userProfile, toggleLike, user, followingIds } = useAuth();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [search, setSearch] = useState('');
   const [showIntro, setShowIntro] = useState(true);
@@ -117,17 +118,10 @@ export const Explore: React.FC = () => {
     return null;
   };
 
-  // ระยะ haversine (km) — อัลกอริทึมเรียง "คนใกล้คุณ" เร็ว O(n log n)
-  const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }): number => {
-    const R = 6371;
-    const toRad = (d: number) => (d * Math.PI) / 180;
-    const dLat = toRad(b.lat - a.lat);
-    const dLng = toRad(b.lng - a.lng);
-    const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(s));
-  };
+  // ระยะ haversine (km) ใช้จาก lib/ranking (แชร์กับ Feed — single source of truth)
 
-  // เรียง sidebar ตามความใกล้ชิด: จังหวัดเดียวกันก่อน → ตามระยะห่างจากจังหวัดผู้ใช้ → ยอดถูกใจ
+  // เรียง sidebar ตามความใกล้ชิด + ความสนิทสนม:
+  //   คนที่ติดตาม → จังหวัดเดียวกัน → ระยะห่างจากจังหวัดผู้ใช้ → ยอดถูกใจ
   // รองรับ filterMode ('near' | 'province' | 'district') เพื่อคงสถานะตัวกรองแม้ usersList เปลี่ยน
   const refreshSidebarUsers = () => {
       const potentialUsers = usersList.filter(u => u.showOnExplore);
@@ -141,6 +135,10 @@ export const Explore: React.FC = () => {
       }
       const me = userProfile?.province ? provinceCenter(userProfile.province) : null;
       const sorted = [...potentialUsers].sort((a, b) => {
+        // 1. ความสนิทสนม (affinity): คนที่ติดตามขึ้นก่อน — แรงบันดาลใจจากระบบ EdgeRank
+        const fa = followingIds.includes(a.userId) ? 0 : 1;
+        const fb = followingIds.includes(b.userId) ? 0 : 1;
+        if (fa !== fb) return fa - fb;
         if (userProfile?.province) {
           const am = a.province === userProfile.province ? 0 : 1;
           const bm = b.province === userProfile.province ? 0 : 1;

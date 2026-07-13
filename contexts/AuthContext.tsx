@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role, AdminUserView, OnlineUser, AiConfig } from '../types';
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { rankPosts } from '../lib/ranking';
 
 // Realtime presence ใช้ ref ระดับ module เพื่อไม่ให้หายเมื่อ component re-render
 let presenceChannel: any = null;
@@ -606,7 +607,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           })),
           createdAt: p.created_at
         }));
-        setPosts(mapped);
+        setPosts(rankPosts(mapped, followingIds));
         return;
       }
     } catch (error) {
@@ -614,7 +615,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     // Fallback: โพสต์จำลอง (demo / ยังไม่มีข้อมูลใน DB)
     const now = Date.now();
-    setPosts([
+    const fallbackPosts: Post[] = [
       {
         id: 'seed-welcome', userId: 'seed-zeetosit', username: 'zeetosit', displayName: 'Admin Zeetosit',
         photoUrl: 'https://ui-avatars.com/api/?name=Admin+Zeetosit&background=FF7A2F&color=fff',
@@ -638,7 +639,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         mediaUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', mediaType: 'video',
         likes: 54, likedByMe: false, comments: [], createdAt: new Date(now - 600000).toISOString()
       }
-    ]);
+    ];
+    // เรียง fallback ตามคะแนนด้วย (demo mode ก็ต้องได้ลำดับที่ดี)
+    setPosts(rankPosts(fallbackPosts, followingIds));
   };
 
   const createPost = async (text: string, mediaUrl?: string, mediaType: 'none' | 'image' | 'video' = 'none'): Promise<Post | null> => {
