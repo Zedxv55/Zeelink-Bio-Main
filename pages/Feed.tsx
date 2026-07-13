@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
 import { fonts, palette } from '../lib/designTokens';
-import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X, Search } from 'lucide-react';
 
 // จับ URL รูป/วิดีโอ จากข้อความ (รองรับแชร์ลิงก์ media แบบเดียวกับ Facebook)
 const detectMedia = (text: string): { url?: string; type: 'none' | 'image' | 'video' } => {
@@ -40,6 +40,18 @@ export const Feed: React.FC = () => {
   const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [commentFor, setCommentFor] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  // ค้นหาโพสต์ฝั่ง client — O(n) ตามหลัก CLAUDE.md (ไม่วนซ้ำซ้อน)
+  const visiblePosts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return posts;
+    return posts.filter(p =>
+      p.text.toLowerCase().includes(q) ||
+      p.displayName.toLowerCase().includes(q) ||
+      p.username.toLowerCase().includes(q)
+    );
+  }, [posts, search]);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -140,8 +152,26 @@ export const Feed: React.FC = () => {
             </div>
           )}
 
+          {/* ===== ช่องค้นหาโพสต์ (O(n) client-side) ===== */}
+          <div className="glass-card p-3 flex items-center gap-2" style={{ borderColor: 'var(--glass-border)' }}>
+            <Search size={18} style={{ color: palette.blue }} className="flex-shrink-0" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="ค้นหาโพสต์ หรือชื่อคนโพสต์..."
+              aria-label="ค้นหาโพสต์"
+              className="flex-1 bg-transparent outline-none text-sm py-1"
+              style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} aria-label="ล้างการค้นหา" className="opacity-60 hover:opacity-100">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
           {/* ===== Feed Posts ===== */}
-          {posts.map(post => (
+          {visiblePosts.map(post => (
             <article key={post.id} className="glass-card p-4 border-[var(--orange)]/30 animate-fade-in">
               {/* Author */}
               <div className="flex items-center gap-3 mb-3">
@@ -223,6 +253,9 @@ export const Feed: React.FC = () => {
 
           {posts.length === 0 && (
             <div className="text-center py-10 opacity-50">ยังไม่มีโพสต์ ลองแชร์ผลงานแรกของคุณ!</div>
+          )}
+          {posts.length > 0 && visiblePosts.length === 0 && (
+            <div className="text-center py-10 opacity-50">ไม่พบโพสต์ที่ตรงกับ &quot;{search}&quot;</div>
           )}
         </div>
       </div>

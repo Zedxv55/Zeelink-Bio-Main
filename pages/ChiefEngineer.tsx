@@ -46,6 +46,13 @@ const ISSUES: IssueItem[] = [
     status: 'done',
   },
   {
+    id: 'feed-search',
+    priority: 'P2',
+    title: 'ฟีดไม่มีช่องค้นหาโพสต์',
+    detail: 'เพิ่มช่องค้นหาแบบ O(n) ฝั่ง client (กรองตามข้อความ/ชื่อ/username) ตามหลัก CLAUDE.md',
+    status: 'done',
+  },
+  {
     id: 'pwa',
     priority: 'P1',
     title: 'ยังไม่รองรับการติดตั้งเป็นแอป (PWA)',
