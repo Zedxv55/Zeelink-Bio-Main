@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Post, Profile } from '../types';
 import { GlassBackground } from '../components/GlassBackground';
@@ -31,6 +31,9 @@ const timeAgo = (iso: string): string => {
 export const Feed: React.FC = () => {
   const { user, profile, posts, createPost, toggleLikePost, addComment, uploadPostMedia, usersList, followingIds, followUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // สะพานค้นหาจากแถบเมนู (navbar) ผ่าน ?q=
+  const urlQ = searchParams.get('q') || '';
 
   const [text, setText] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
@@ -42,7 +45,16 @@ export const Feed: React.FC = () => {
   const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [commentFor, setCommentFor] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(urlQ);
+
+  // sync เมื่อ navbar นำทางมาพร้อม ?q= ใหม่
+  useEffect(() => { setSearch(urlQ); }, [urlQ]);
+
+  const updateSearch = (v: string) => {
+    setSearch(v);
+    if (v.trim()) setSearchParams({ q: v.trim() }, { replace: true });
+    else setSearchParams({}, { replace: true });
+  };
 
   // ค้นหาโพสต์ฝั่ง client — O(n) ตามหลัก CLAUDE.md (ไม่วนซ้ำซ้อน)
   const visiblePosts = useMemo(() => {
@@ -178,14 +190,14 @@ export const Feed: React.FC = () => {
             <Search size={18} style={{ color: palette.blue }} className="flex-shrink-0" />
             <input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => updateSearch(e.target.value)}
               placeholder="ค้นหาโพสต์ หรือชื่อคนโพสต์..."
               aria-label="ค้นหาโพสต์"
               className="flex-1 bg-transparent outline-none text-sm py-1"
               style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}
             />
             {search && (
-              <button onClick={() => setSearch('')} aria-label="ล้างการค้นหา" className="opacity-60 hover:opacity-100">
+              <button onClick={() => updateSearch('')} aria-label="ล้างการค้นหา" className="opacity-60 hover:opacity-100">
                 <X size={16} />
               </button>
             )}

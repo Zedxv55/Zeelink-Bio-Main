@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { AiMascot } from './components/AiMascot';
 import { Dashboard } from './pages/Dashboard';
@@ -13,16 +13,21 @@ import { Modal } from './components/ui/Modal';
 import { useAuth } from './contexts/AuthContext';
 
 const App: React.FC = () => {
-  const { user, isLoading, activePopup, closeActivePopup } = useAuth();
+  const { user, activePopup, closeActivePopup } = useAuth();
+  const location = useLocation();
 
-  if (isLoading) {
-    return <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading Zeelink System...</div>;
-  }
+  // หน้า Login คือจุดทางเข้าหลัก → ซ่อนแถบเมนู/มาสคอต เพื่อความสะอาด
+  const showChrome = location.pathname !== '/login';
+
+  // หมายเหตุ: ไม่บล็อกหน้าจอด้วย isLoading เพื่อกันหน้าว่างค้าง
+  // (กรณี Supabase ไม่ตอบสนอง เดิมจะค้างที่ "Loading...") — แสดงแอปทันที
+  // แล้วค่อยโหลด session/ข้อมูลเบื้องหลัง สำหรับผู้ที่ล็อกอินอยู่จะเห็นหน้า Login
+  // กระพริบสั้นๆ แล้วเปลี่ยนเป็นฟีดอัตโนมัติ
 
   return (
     <>
-      <Navbar />
-      <AiMascot />
+      {showChrome && <Navbar />}
+      {showChrome && <AiMascot />}
 
       {/* Global Popup System */}
       <Modal
@@ -36,8 +41,8 @@ const App: React.FC = () => {
         {activePopup?.content && <div>{activePopup.content}</div>}
       </Modal>
 
-      {/* เว้นระยะซ้ายให้ left sidebar (เดสก์ท็อป/แท็บเล็ต) — จอเล็กไม่มี sidebar */}
-      <div className="md:pl-[72px] lg:pl-[248px]">
+      {/* เว้นระยะด้านบนให้แถบเมนู (ทุกจอ) */}
+      <div className={showChrome ? 'pt-[60px]' : ''}>
         <Routes>
           {/* หน้าแรก = ฟีดทุกคน (ล็อกอินแล้ว) หรือหน้า Login (ยังไม่ล็อกอิน) */}
           <Route path="/" element={user ? <Feed /> : <Login />} />

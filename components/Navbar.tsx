@@ -1,33 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  Home, User, Map, Vote, Newspaper, LogOut, Sun, Moon,
+  Home, Map, Vote, User, Search, Sun, Moon, LogOut, LayoutDashboard,
 } from 'lucide-react';
 import { Logo } from './Logo';
-import { Button } from './ui/Button';
-import { fonts, fontSize, spacing, palette, radius } from '../lib/designTokens';
+import { fonts, palette } from '../lib/designTokens';
 
-// ===== รายการนำทางหลัก (ใช้ร่วม sidebar + top-bar มือถือ) =====
+// ===== รายการนำทางหลัก (แถบบนเหมือน Facebook) =====
 interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  public?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'หน้าแรก', icon: Home, public: true },
-  { to: '/feed', label: 'ฟีด', icon: Newspaper },
+  { to: '/feed', label: 'ฟีด', icon: Home },
   { to: '/explore', label: 'แผนที่', icon: Map },
   { to: '/vote', label: 'โหวต', icon: Vote },
   { to: '/dashboard', label: 'โปรไฟล์', icon: User },
 ];
 
-const HEADER_H = '56px';
-const SIDEBAR_W_MD = '72px';
-const SIDEBAR_W_LG = '248px';
+const HEADER_H = '60px';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -35,135 +30,164 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [query, setQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const handleLogout = async () => {
+    setMenuOpen(false);
     await logout();
-    navigate('/');
+    navigate('/login');
   };
 
-  const isActive = (to: string): boolean => {
-    if (to === '/') return location.pathname === '/';
-    return location.pathname.startsWith(to);
+  // ปิดเมนูอวตารเมื่อคลิกข้างนอก
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const isActive = (to: string): boolean => location.pathname.startsWith(to);
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    navigate(q ? `/feed?q=${encodeURIComponent(q)}` : '/feed');
   };
 
   return (
-    <>
-      {/* ============ TOP HEADER (ทุกขนาด — สไตล์ Facebook) ============ */}
-      <header
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 sm:px-4"
-        style={{
-          height: HEADER_H,
-          background: 'var(--glass-bg)',
-          borderBottom: '1px solid var(--glass-border)',
-          backdropFilter: 'blur(12px)',
-        }}
-      >
-        <Link to="/" className="flex items-center" aria-label="Zeelink หน้าแรก">
-          <Logo size={32} variant={theme === 'dark' ? 'light' : 'dark'} withWordmark />
-        </Link>
+    <header
+      className="fixed top-0 left-0 right-0 z-50 flex items-center gap-2 px-3 sm:px-4"
+      style={{
+        height: HEADER_H,
+        background: 'var(--glass-bg)',
+        borderBottom: '1px solid var(--glass-border)',
+        backdropFilter: 'blur(14px)',
+        boxShadow: '0 1px 0 var(--orange-soft)',
+      }}
+    >
+      {/* ===== โลโก้ ===== */}
+      <Link to={user ? '/feed' : '/login'} className="flex items-center flex-shrink-0" aria-label="Zeelink หน้าแรก">
+        <Logo size={30} variant={theme === 'dark' ? 'light' : 'dark'} withWordmark />
+      </Link>
 
-        <div className="flex items-center gap-1 sm:gap-2">
-          {/* ไอคอนนำทางบนมือถือ (ใต้ md) — สไตล์แถบบน Facebook มือถือ */}
-          <div className="flex items-center gap-0.5 md:hidden">
-            {NAV_ITEMS.slice(1, 4).map(item => {
-              const Icon = item.icon;
-              const active = isActive(item.to);
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  aria-label={item.label}
-                  className="p-2 rounded-lg transition-colors"
-                  style={{ color: active ? palette.orange : 'var(--text-secondary)' }}
-                >
-                  <Icon size={22} />
-                </Link>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: 'var(--text-primary)', background: 'var(--glass-border)' }}
-            aria-label="สลับธีม"
-          >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-
-          {user ? (
-            <div className="flex items-center gap-2">
-              <Link to="/dashboard" aria-label="โปรไฟล์">
-                <img
-                  src={user.photoUrl}
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full border-2 object-cover"
-                  style={{ borderColor: palette.orange }}
-                />
-              </Link>
-              <Button variant="ghost" size="sm" leftIcon={<LogOut size={16} />} onClick={handleLogout} className="hidden sm:inline-flex">
-                ออกจากระบบ
-              </Button>
-            </div>
-          ) : (
-            <Link to="/login">
-              <Button variant="primary" size="sm">เข้าสู่ระบบ</Button>
-            </Link>
-          )}
+      {/* ===== ช่องค้นหา (เดสก์ท็อป) ===== */}
+      <form onSubmit={submitSearch} className="hidden md:flex items-center flex-1 max-w-md mx-2">
+        <div className="relative w-full">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="ค้นหาโพสต์ เพื่อน หรือครีเอเตอร์..."
+            aria-label="ค้นหา"
+            className="w-full pl-9 pr-3 py-2 rounded-full text-sm outline-none"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', fontFamily: fonts.body }}
+          />
         </div>
-      </header>
+      </form>
 
-      {/* ============ LEFT SIDEBAR (เดสก์ท็อป/แท็บเล็ต เท่านั้น) ============ */}
-      <aside
-        className="hidden md:flex flex-col fixed z-40 py-4 border-r"
-        style={{
-          top: HEADER_H,
-          bottom: 0,
-          left: 0,
-          width: SIDEBAR_W_MD,
-          background: 'var(--glass-bg)',
-          borderColor: 'var(--glass-border)',
-        }}
-      >
-        <nav className="flex flex-col gap-1 px-2 flex-1">
-          {NAV_ITEMS.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.to);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors lg:justify-start justify-center"
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: fontSize('sm'),
-                  fontWeight: active ? 700 : 500,
-                  color: active ? palette.orange : 'var(--text-primary)',
-                  background: active ? palette.orangeSoft : 'transparent',
-                }}
-                aria-current={active ? 'page' : undefined}
-              >
-                <Icon size={22} className="flex-shrink-0" />
-                <span className="hidden lg:inline">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {user && (
-          <div className="px-2 mt-2 border-t pt-3" style={{ borderColor: 'var(--glass-border)' }}>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 w-full transition-colors lg:justify-start justify-center hover:bg-white/10"
-              style={{ fontFamily: fonts.body, fontSize: fontSize('sm'), color: 'var(--text-secondary)' }}
+      {/* ===== ไอคอนนำทาง (เหมือนแถบบน Facebook) ===== */}
+      <nav className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+        {NAV_ITEMS.map(item => {
+          const Icon = item.icon;
+          const active = isActive(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors"
+              style={{
+                color: active ? palette.orange : 'var(--text-secondary)',
+                background: active ? palette.orangeSoft : 'transparent',
+              }}
             >
-              <LogOut size={20} className="flex-shrink-0" />
-              <span className="hidden lg:inline">ออกจากระบบ</span>
+              <Icon size={22} className="flex-shrink-0" />
+              <span className="hidden lg:inline text-sm font-semibold" style={{ fontFamily: fonts.body }}>{item.label}</span>
+              {active && <span className="hidden lg:block absolute -bottom-[9px] left-2 right-2 h-[2.5px] rounded-full" style={{ background: palette.orange }} />}
+            </Link>
+          );
+        })}
+
+        {/* ค้นหาแบบย่อ (มือถือ) → ไปหน้าฟีดที่มีช่องค้นหา */}
+        <button
+          onClick={() => navigate('/feed')}
+          aria-label="ค้นหา"
+          className="md:hidden p-2 rounded-lg transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          <Search size={22} />
+        </button>
+
+        {/* สลับธีม */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg transition-colors"
+          style={{ color: 'var(--text-primary)', background: 'var(--glass-border)' }}
+          aria-label="สลับธีม"
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        {/* ===== ผู้ใช้: อวตาร + เมนู ===== */}
+        {user ? (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label="เมนูผู้ใช้"
+              className="ml-1 rounded-full p-0.5 transition-transform hover:scale-105"
+              style={{ border: `2px solid ${menuOpen ? palette.orange : 'var(--glass-border)'}` }}
+            >
+              <img src={user.photoUrl} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
             </button>
+
+            {menuOpen && (
+              <div
+                className="absolute right-0 top-11 w-56 rounded-2xl shadow-2xl p-2 z-50 animate-fade-in"
+                style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+                role="menu"
+              >
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors"
+                  style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}
+                  role="menuitem"
+                >
+                  <img src={user.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate">{user.name}</p>
+                    <p className="text-[11px] opacity-60 truncate">@{profileUsername(user.email)}</p>
+                  </div>
+                </Link>
+                <div className="my-1 h-px" style={{ background: 'var(--glass-border)' }} />
+                <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }} role="menuitem">
+                  <LayoutDashboard size={18} /> โปรไฟล์ของฉัน
+                </Link>
+                <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: palette.pink }} role="menuitem">
+                  <LogOut size={18} /> ออกจากระบบ
+                </button>
+              </div>
+            )}
           </div>
+        ) : (
+          <Link to="/login" className="ml-1">
+            <span
+              className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-bold text-white transition-transform hover:scale-105"
+              style={{ background: palette.orange, fontFamily: fonts.body }}
+            >
+              เข้าสู่ระบบ
+            </span>
+          </Link>
         )}
-      </aside>
-    </>
+      </nav>
+    </header>
   );
 };
+
+const profileUsername = (email?: string) => (email ? email.split('@')[0] : 'zeelink');
 
 export default Navbar;

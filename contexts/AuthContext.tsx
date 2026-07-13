@@ -40,7 +40,6 @@ interface AuthContextType {
   loadAiConfigs: () => Promise<void>;
   saveAiConfig: (cfg: AiConfig) => Promise<void>;
   login: (email: string, password: string, remember?: boolean) => Promise<{ user: User | null; error?: string }>;
-  loginWithOAuth: (provider: 'google' | 'facebook') => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<{ user: User | null; needsConfirmation?: boolean }>;
   resetPassword: (email: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -288,20 +287,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { user: null };
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loginWithOAuth = async (provider: 'google' | 'facebook'): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo: `${window.location.origin}/#/dashboard` }
-      });
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('OAuth error:', error);
-      return false;
     }
   };
 
@@ -1055,7 +1040,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user, profile, usersList, isLoading, activePopup, popups, questions, posts,
     onlineUsers, allUsers, followingIds, aiConfigs,
-    login, loginWithOAuth, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser, unbanUser,
+    login, register, resetPassword, logout, updateProfile, toggleLike, deleteUser, banUser, unbanUser,
     setUserRole, simulateUsers, backupData, createPopup, togglePopup, deletePopup,
     closeActivePopup, addQuestion, voteQuestion, askAiStylist,
     loadPosts, createPost, toggleLikePost, addComment, deletePost, uploadPostMedia,
