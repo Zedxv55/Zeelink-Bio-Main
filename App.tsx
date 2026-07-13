@@ -10,7 +10,6 @@ import { Feed } from './pages/Feed';
 import { ProfilePage } from './pages/Profile';
 import { Login } from './pages/Login';
 import { AdminPanel } from './pages/AdminPanel';
-import { ChiefEngineer } from './pages/ChiefEngineer';
 import { Modal } from './components/ui/Modal';
 import { useAuth } from './contexts/AuthContext';
 
@@ -47,7 +46,6 @@ const App: React.FC = () => {
         <Route path="/feed" element={<Feed />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/vote" element={<Vote />} />
-        <Route path="/chief-engineer" element={<ChiefEngineer />} />
         <Route path="/:username" element={<ProfilePage />} />
       </Routes>
     </>

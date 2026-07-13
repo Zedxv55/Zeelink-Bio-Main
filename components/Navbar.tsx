@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Home, User, Map, Vote, Newspaper, LogOut, Sun, Moon, Menu, X, Cpu } from 'lucide-react';
+import { Home, User, Map, Vote, Newspaper, LogOut, Sun, Moon, Menu, X } from 'lucide-react';
 import { Logo } from './Logo';
 import { Button } from './ui/Button';
 import { fonts, fontSize, spacing } from '../lib/designTokens';
@@ -48,9 +48,6 @@ export const Navbar: React.FC = () => {
                 </Link>
                 <Link to="/vote" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
                   <Vote size={16} className="mr-2" /> โหวต
-                </Link>
-                <Link to="/chief-engineer" className="pixel-link font-bold flex items-center" style={{ fontSize: fontSize('sm'), fontFamily: fonts.body }}>
-                  <Cpu size={16} className="mr-2" /> หัววิศวกร
                 </Link>
                 {user.role === 'admin' && (
                   <Link to="/admin" className="pixel-link font-bold" style={{ color: 'var(--orange)', fontSize: fontSize('sm'), fontFamily: fonts.body }}>
@@ -126,9 +123,6 @@ export const Navbar: React.FC = () => {
                   </Link>
                   <Link to="/vote" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center" style={{ fontSize: fontSize('base') }}>
                     <Vote size={18} className="mr-3" /> โหวต
-                  </Link>
-                  <Link to="/chief-engineer" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold flex items-center" style={{ fontSize: fontSize('base') }}>
-                    <Cpu size={18} className="mr-3" /> หัววิศวกร
                   </Link>
                   {user.role === 'admin' && (
                     <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 pixel-link font-bold" style={{ color: 'var(--orange)', fontSize: fontSize('base') }}>
