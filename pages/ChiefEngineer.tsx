@@ -56,8 +56,8 @@ const ISSUES: IssueItem[] = [
     id: 'pwa',
     priority: 'P1',
     title: 'ยังไม่รองรับการติดตั้งเป็นแอป (PWA)',
-    detail: 'เพิ่ม manifest + service worker ให้ผู้ใช้ติดตั้งเข้าโฮมสกรีนได้เหมือน Facebook',
-    status: 'todo',
+    detail: 'เพิ่ม manifest.webmanifest + icon.svg + meta ให้ติดตั้งเข้าโฮมสกรีนได้เหมือน Facebook',
+    status: 'done',
   },
   {
     id: 'notif',

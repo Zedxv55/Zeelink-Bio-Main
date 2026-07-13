@@ -1,0 +1,21 @@
+{
+  "name": "Zeelink — พอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย",
+  "short_name": "Zeelink",
+  "description": "แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย เชื่อมครีเอเตอร์ทั่วประเทศ",
+  "lang": "th",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1F1B16",
+  "theme_color": "#FF7A2F",
+  "categories": ["social", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
