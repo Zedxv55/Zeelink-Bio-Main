@@ -1,0 +1,332 @@
+================================================================================
+ZELINK — สรุปโปรเจกต์โดยละเอียด
+(จัดทำเพื่อนำไปวิเคราะห์และพัฒนาเป็น "เวอร์ชั่นสมบูรณ์" / v1.0)
+================================================================================
+ที่มา: โค้ดจริงใน ~/Zeelink-Bio-Main (อ่านจาก CLAUDE.md, README.md, types.ts,
+      App.tsx, AuthContext.tsx, pages/*, components/*, lib/*, Server/ai.js, supabase/*)
+วันที่สรุป: 2026-07-13
+สถานะ build: ผ่าน (npm run build = tsc --noEmit && vite build)
+Branch ล่าสุดบน GitHub: origin/main (commit dc498a1)
+
+--------------------------------------------------------------------------------
+1. ภาพรวม (OVERVIEW)
+--------------------------------------------------------------------------------
+Zeelink คือ "แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย" รูปแบบคล้าย Linktree
+แต่มีของเพิ่มที่ differentiates จากคู่แข่ง:
+  - ลิงก์ BIO แบบพอร์ตโฟลิโอ (โปรไฟล์รวมลิงก์แพลตฟอร์ม)
+  - แผนที่แสดง "คนใกล้เคียง" (Explore) ด้วยพิกัดจริง + ระยะ haversine
+  - ระบบโหวตคำถามชุมชน (Vote)
+  - ปรับธีมสีหน้าเว็บได้ "ต่อคน" (แต่ละโปรไฟล์มี ThemeConfig ของตัวเอง)
+  - แผงแอดมิน + สถานะออนไลน์แบบ Realtime
+  - ส่วน AI (ตัวการ์ตูน Mascot + แชท)
+
+กลุ่มเป้าหมาย: ครีเอเตอร์/ฟรีแลนซ์/คนไทยทั่วไป ที่ต้องการหน้าพอร์ตโฟลิโอ
+สั้นๆ มีสังคม + แผนที่ + โหวต
+
+จุดแข็ง (USP): "BIO ลิงก์ + แผนที่คนใกล้เคียง + โหวต + ธีมต่อคน + AI"
+ในตลาดไทยยังมีน้อยที่รวมหมดนี้ในที่เดียว
+
+--------------------------------------------------------------------------------
+2. เทคโนโลยี (TECH STACK)
+--------------------------------------------------------------------------------
+หน้าบ้าน (Frontend):
+  - React 19 + TypeScript
+  - Vite 6 (build tool)
+  - react-router-dom v7 — ใช้ "HashRouter" (URL เป็น /#/... เหมาะโฮสต์ static)
+  - Tailwind CSS v3 (utility-first)
+  - lucide-react (ไอคอน)
+  - Leaflet (แผนที่ แทน Google Maps เพื่อไม่เสียค่า key)
+  - PWA: manifest + icon + meta (ติดตั้งเป็นแอปได้ระดับเบื้องต้น)
+
+หลังบ้าน / ฐานข้อมูล (Backend & DB):
+  - Supabase = Postgres + Auth + Storage + Realtime
+  - เรียกผ่าน @supabase/supabase-js (contexts/supabaseClient.ts)
+  - โหมด Demo: ถ้าไม่มี .env แอปไม่พัง แต่สร้าง client แบบ fallback ทุก query มี
+    try/catch + mock data → ดูหน้าเว็บได้โดยไม่ต่อ DB
+
+AI:
+  - Server/ai.js = serverless function เรียก Gemini 1.5 Flash
+    (ใช้ env GEMINI_API_KEY ฝั่งเซิร์ฟเวอร์ — ถูกต้องด้านความปลอดภัย)
+  - หมายเหตุ: README ระบุ AiMascot ใช้ Groq (VITE_AI_API_KEY ฝั่ง client)
+    → มีความขัดแย้งระหว่างโค้ด (Gemini/server) กับเอกสาร (Groq/client)
+    ควรเคลียร์ให้เหลือทางเดียวตอนทำเวอร์ชั่นสมบูรณ์
+
+--------------------------------------------------------------------------------
+3. สถาปัตยกรรม (ARCHITECTURE)
+--------------------------------------------------------------------------------
+โครงสร้างโฟลเดอร์:
+  pages/        → หน้าต่างๆ (Dashboard, Explore, Vote, Feed, Profile, Login, AdminPanel)
+  components/   → Navbar, AiMascot, ErrorBoundary, GlassBackground, ThaiBackground,
+                 Logo, DemoOverlay, ui/{Button, Card, Input, Modal}
+  contexts/     → AuthContext.tsx (state กลางใหญ่), ThemeContext.tsx, supabaseClient.ts
+  lib/          → designTokens.ts (ดีไซน์ซิสเต็ม), ranking.ts (จัดอันดับ+haversine),
+                 social.ts (ตรวจจ่ายแพลตฟอร์มโซเชียล + ตรวจ URL ปลอดภัย)
+  Server/       → ai.js (serverless AI)
+  supabase/     → schema.sql + ไฟล์ migration หลายไฟล์ (idempotent)
+  constants.ts  → จังหวัด 77 แห่ง + คำลอย (FLOATING_PHRASES)
+  App.tsx       → Routing + Guard
+  index.tsx     → Entry: ThemeProvider > AuthProvider > HashRouter > App
+  index.html    → โหลดฟอนต์ IBM Plex + CSS variables + meta
+
+Routing + Guard (App.tsx):
+  - "/" และ "/login" → หน้า Login เสมอ (มีฟีดเบลอข้างหลัง)
+  - "/feed" "/dashboard" "/explore" "/vote" "/admin" → ครอบด้วย <RequireAuth>
+    ถ้าไม่ล็อกอินเด้งกลับ /login
+  - "/:username" → หน้าโปรไฟล์ (เปิดสาธารณะ ไม่ต้องล็อกอิน)
+  - ซ่อน Navbar/AiMascot/Popup บนหน้าล็อกอิน
+
+State Management (AuthContext):
+  เก็บ state กลางเยอะ: user, profile, usersList, posts, questions, popups,
+  onlineUsers, allUsers, followingIds, aiConfigs, activePopup, isLoading
+  + methods: login/register/logout/resetPassword, createPost/toggleLikePost/
+  addComment/deletePost/uploadPostMedia, followUser/unfollowUser,
+  loadAllUsers, banUser/unbanUser, createPopup/..., addQuestion/voteQuestion,
+  askAiStylist, loadPosts, ฯลฯ
+  จุดสังเกต: Context เดียวใหญ่มาก → เวอร์ชั่นสมบูรณ์อาจแตกเป็นหลาย context
+  (Auth / Feed / Admin) หรือใช้ Zustand/Redux เพื่อลด re-render
+
+Auth Flow:
+  - สมัคร/ล็อกอินด้วยอีเมล+รหัสผ่าน (Supabase Auth)
+  - "จำรหัสผ่าน" → เก็บ session ใน Supabase (localStorage 'zeelink_remember')
+  - ตอนเปิดแอป getUser() กู้คืน session → loadUserByEmail → ถ้าโดนแบน signOut ทันที
+  - onAuthStateChange → เลื่อนงาน async ด้วย setTimeout(0) เพื่อไม่ให้ deadlock
+    กับ auth lock
+  - Realtime Presence: channel 'zeelink-online' + heartbeat ทุก 30 วิ
+    (ต้องรัน supabase/admin-online.sql ก่อนถึงจะเก็บ last_seen ลง DB)
+
+--------------------------------------------------------------------------------
+4. หน้าต่างๆ / ฟีเจอร์ (PAGES & FEATURES)
+--------------------------------------------------------------------------------
+[Login] (จุดเข้าหลัก)
+  - โหมด: login / register / forgot / setpw (ตั้งรหัสใหม่จากลิงก์รีเซ็ต)
+  - พื้นหลัง: <FeedBackdrop> ฟีดจำลองเบลอ (blur 10px) + ThaiBackground + ข้อความลอย
+  - จดจำอีเมล (zeelink_remember_email) แต่ไม่จดจำรหัสผ่าน
+  - ถ้ามี session ที่จำไว้ → ข้าม sign-in ซ้ำ เข้า /feed ทันที
+  - แอดมินจำลอง: zbcd1053@gmail.com (role='admin')
+
+[Feed] (เหมือนฟีด Facebook)
+  - โพสต์ข้อความ / รูป / วิดีโอ (ตรวจ URL มีเดียอัตโนมัติ)
+  - ถูกใจ / คอมเมนต์ / แชร์ (share ผ่าน navigator.share หรือ clipboard)
+  - ค้นหาโพสต์ฝั่ง client O(n) ผ่าน ?q= (ซิงค์กับ Navbar)
+  - เรียงตาม feedScore (ดู Section 6)
+  - คอลัมน์ขวา "คนใกล้คุณ" (NearbyWidget ใช้ haversine)
+  - Empty-state ต้อนรับผู้ใช้ใหม่
+
+[Dashboard] (พอร์ตโฟลิโอ)
+  - สร้างลิงก์แพลตฟอร์มแบบ BIO (links[])
+  - แผนที่ Leaflet แชร์ตำแหน่งเรียลไทม์ + เลือกที่อยู่ครบ 77 จังหวัด
+    (region/province/district/subDistrict/postalCode + lat/lng)
+  - ปุ่มแชร์ลิงก์โปรไฟล์
+
+[Explore] (แผนที่คนใกล้เคียง)
+  - แผนที่แสดงโปรไฟล์ที่ showOnExplore=true ครอบคลุม 77 จังหวัด
+  - ระยะ haversine จากตำแหน่งผู้ใช้
+  - มือถือขอตำแหน่ง (geolocation) + refresh cooldown
+
+[Vote] (โหวตคำถาม)
+  - ถามคำถาม / โหวตคำถามชุมชน
+  - ใช้ RPC vote_question (SECURITY DEFINER) เพื่อไม่ติด RLS
+  - สถานะ: pending / approved / rejected (มี BANNED_WORDS กรองคำหยาบ)
+
+[Profile] (/username)
+  - หน้าโปรไฟล์ส่วนตัว รวมลิงก์ (ปรับธีมสีได้ต่อคน ผ่าน ThemeConfig)
+  - เปิดสาธารณะ
+
+[Admin] (/admin)
+  - จัดการผู้ใช้ (ลบ / แบน / ปลดแบน / เปลี่ยนสิทธิ์)
+  - จัดการป็อปอัปประกาศ (popups)
+  - แท็บ AI config (ต่อคน/ระดับเว็บ) — ต้องรัน ai-configs.sql
+  - ดูสถานะออนไลน์ (Realtime Presence)
+
+[AiMascot]
+  - ตัวการ์ตูนพิกเซลขับตามเมาส์ คลิกทักทาย
+  - แชทผ่าน AI (Gemini/serverless ตามโค้ด)
+
+[Navbar]
+  - สไตล์ Facebook: top header + left sidebar (เดสก์ท็อป), มือถือแถบบน
+  - ช่องค้นหา → ส่ง ?q= ไป Feed
+
+[องค์ประกอบร่วม]
+  - ErrorBoundary: กันหน้าว่าง ถ้าพังแสดงปุ่มโหลดใหม่
+  - GlassBackground / ThaiBackground: พื้นหลังสไตล์ไทย + กระจก
+  - DemoOverlay: แบนเนอร์โหมด demo
+  - ui/{Button, Card, Input, Modal}: คอมโพเนนต์ฐาน (responsive + accessible)
+
+--------------------------------------------------------------------------------
+5. ข้อมูล / โมเดล (DATA MODEL)
+--------------------------------------------------------------------------------
+ตารางใน Supabase (Postgres):
+  users        → id, email, name, role('user'|'admin'), is_banned
+  profiles     → id, user_id(FK), username, display_name, photo_url, bio, tags[],
+                 region, province, district, sub_district, postal_code, lat, lng,
+                 show_on_explore, likes, views, theme_config(JSONB), links(JSONB),
+                 last_seen_at, created/updated_at
+  questions    → id, user_id, username, text, votes, voted_user_ids[], status
+  popups       → id, title, image_url, link_url, content, is_active, frequency
+  posts        → id, user_id, username, display_name, photo_url, text,
+                 media_url, media_type, likes, liked_users[], created_at
+  post_comments→ id, post_id, user_id, username, display_name, photo_url, text
+  follows      → follower_id, following_id, status (ต้องรัน follows.sql)
+  ai_configs   → id, scope, owner_ref, model, persona, enabled (ai-configs.sql)
+
+RPC (Stored procedures):
+  vote_question(q_id)        → โหวตแบบ SECURITY DEFINER
+  toggle_post_like(p_id,uid) → กดไลก์โพสต์ (มี fallback ถ้ายังไม่มี)
+  touch_presence()           → อัปเดต last_seen_at
+
+Constants:
+  - จังหวัด 77 แห่ง จัดกลุ่มตามภูมิภาค (กลาง/อีสาน/เหนือ/ใต้) พร้อม lat/lng/zip
+  - FLOATING_PHRASES: คำลอยเด้งไปมาในหน้า Login
+
+--------------------------------------------------------------------------------
+6. ระบบจัดอันดับ (RANKING) — lib/ranking.ts
+--------------------------------------------------------------------------------
+Feed score (ยืมแนวคิด EdgeRank):
+  feedScore = recency*0.5 + engagement*0.3 + affinity*0.2
+  - recency: exponential decay ครึ่งชีวิต 48 ชม. (โพสต์ใหม่สำคัญสุด)
+  - engagement: likes*1 + comments*2 + shares*1.5 แล้ว log10 เพื่อไม่ให้ viral โดมิเนต
+  - affinity: ติดตามผู้โพสต์ +1.5
+  เรียง O(n log n)
+
+Explore ranking:
+  ติดตามก่อน → จังหวัดเดียวกัน → ระยะใกล้ (haversine) → ยอดไลก์
+  haversineKm(a,b): ระยะจริงกิโลเมตรระหว่าง 2 พิกัด (R=6371)
+
+--------------------------------------------------------------------------------
+7. ดีไซน์ซิสเต็ม (DESIGN SYSTEM) — lib/designTokens.ts + index.html
+--------------------------------------------------------------------------------
+  - Spacing: ทวีคูณ 4px เสมอ (4/8/12/16/24/32/48/64) ใช้ผ่าน sp()
+  - Typography: IBM Plex Sans Thai (display/body) + IBM Plex Mono (เลข/code)
+  - Palette: orange #FF7A2F (primary), blue/yellow/pink/green (secondary),
+             status success/warning/error
+  - Radius: sm6 / md10 / lg14 / xl20 / full
+  - Shadow: sm/md/lg/glow  |  Motion: fast0.15 / base0.25 / slow0.4 วินาที
+  - Theme: อ่านจาก CSS variables (--text-*, --bg-*, --glass-*, --orange*)
+    รองรับ light/dark ไม่ hardcode hex นอก token
+  - คอมโพเนนต์: components/ui (Button/Card/Input/Modal) responsive + accessible
+    (aria-label, alt text, focus-visible, keyboard nav)
+
+--------------------------------------------------------------------------------
+8. สถานะปัจจุบัน (CURRENT STATUS)
+--------------------------------------------------------------------------------
+ทำงานได้จริง (ต่อ Supabase จริงแล้ว):
+  [x] ตาราง users/profiles/questions/popups
+  [x] ระบบสมาชิก (ล็อกอิน/สมัคร/รีเซ็ตรหัส)
+  [x] แอดมิน + Realtime Presence (ออนไลน์ตอนนี้)
+  [x] โครงสร้างหน้าครบ + รันได้ build ผ่าน
+
+ยังเป็นโหมดจำลอง (in-memory) ถ้ายังไม่รัน SQL เพิ่ม:
+  [ ] posts/post_comments (ต้องรัน migration-feed-latlng.sql)
+  [ ] follows / ระบบติดตาม (follows.sql)
+  [ ] ai_configs (ai-configs.sql)
+  [ ] อัปโหลดมีเดียฟีด (storage-posts-media.sql)
+  [ ] รายงานเนื้อหา (reports.sql)
+  [ ] โหมดโปรไฟล์สาธารณะ/ปิด (profile-visibility.sql)
+  [ ] RLS โพสต์/คอมเมนต์ (feed-media-policy.sql)
+  → ทุกไฟล์ idempotent (รันซ้ำได้ไม่ error)
+
+--------------------------------------------------------------------------------
+9. ช่องโหว่ / สิ่งที่ยังขาด (GAPS — สำคัญสำหรับเวอร์ชั่นสมบูรณ์)
+--------------------------------------------------------------------------------
+ด้านความปลอดภัย (HIGH PRIORITY):
+  - RLS เปิดกว้างชั่วคราวใน schema.sql (เพราะยังไม่มี Auth แน่นหนา)
+    → ก่อนเปิดสาธารณะ ต้องล็อก policy ให้เจ้าของดู/แก้ของตัวเองเท่านั้น
+  - popup.content อาจใช้ dangerouslySetInnerHTML → เสี่ยง XSS ถ้า admin ใส่ HTML
+    ไม่ปลอดภัย ควร sanitize หรือจำกัดเป็น text/markdown
+  - AI key: README บอกใส่ VITE_AI_API_KEY (ฝั่ง client) → รั่วไหลได้
+    โค้ด Server/ai.js ถูกแล้ว (key ฝั่งเซิร์ฟเวอร์) ต้องเคลียร์เอกสาร/การเรียกให้ตรง
+  - Rate limit: ล็อกอิน/รีเซ็ต/โหวต ยังไม่มี rate limit ฝั่งแอป (พึ่ง Supabase บางส่วน)
+  - Email confirmation: เปิด/ปิด auto-confirm ไม่ชัดเจน
+
+ด้านฟีเจอร์ยังไม่เสร็จ:
+  - AI "ต่อไฟล์จริง" ยังไม่เสร็จ (mascot config กับ serverless ยังไม่เชื่อมสมบูรณ์)
+  - ยังไม่ deploy / ไม่มีระบบรายได้ (monetization)
+  - ไม่มีระบบแจ้งเตือน (notifications) / แชทส่วนตัว
+  - ไม่มี PWA offline / push notification จริง
+
+ด้าน质量工程 (Quality Engineering):
+  - ไม่มี automated tests (unit/integration) และไม่มี CI
+  - ไม่มี error tracking (Sentry) / analytics
+  - ไม่มี i18n (รองรับไทยอย่างเดียว)
+  - HashRouter → SEO อ่อน (ถ้าต้องการ SEO ควร BrowserRouter + SSG/SSR)
+
+ด้านประสิทธิภาพ (Performance):
+  - Bundle ใหญ่ (~544 KB JS, 153 KB gzip) → ควร code-split/lazy load หน้า
+    และแยก vendor (Leaflet โหลดเฉพาะตอนเข้าแผนที่)
+  - รูป/มีเดียยังไม่มี optimization/CDN (พึ่ง picsum/ui-avatars ภายนอก)
+
+ด้าน UX/Accessibility:
+  - Mobile responsive มีหลายจุดที่อาจหลุด (ต้อง audit เพิ่ม)
+  - ยังขาดการทดสอบผู้ใช้จริง / a11y audit
+
+--------------------------------------------------------------------------------
+10. ข้อเสนอสำหรับเวอร์ชั่นสมบูรณ์ (RECOMMENDATIONS)
+--------------------------------------------------------------------------------
+เร่งด่วน (P0 — ก่อนเปิดสาธารณะ):
+  1. ล็อก RLS ให้แน่น: policy เฉพาะเจ้าของ + เปิด Supabase Auth จริง
+  2. แก้ XSS: sanitize popup.content หรือเปลี่ยนเป็น markdown/text ปลอดภัย
+  3. ย้าย AI key ไปฝั่งเซิร์ฟเวอร์เท่านั้น (ตัด VITE_AI_API_KEY ออกจาก client)
+  4. เพิ่ม rate limit + email confirmation บังคับ
+
+ควรทำ (P1):
+  5. รันไฟล์ SQL ทั้งหมดให้ครบ (posts/follows/ai_configs/storage/reports/visibility)
+  6. แตก AuthContext เป็นหลาย context หรือใช้ Zustand → ลด re-render
+  7. Code-splitting + lazy load หน้า + แยก Leaflet → ลด bundle
+  8. เพิ่ม automated tests + CI (GitHub Actions) + error tracking
+  9. เคลียร์ความขัดแย้ง AI (Gemini/server vs Groq/client) ให้เหลือทางเดียว
+
+เพิ่มเติม (P2 —  differentiation):
+ 10. ระบบแจ้งเตือน / แชท / ฟีด Realtime
+ 11. โหมดมืด/สว่าง toggle ที่ผู้ใช้เลือกได้
+ 12. Monetization: สมาชิกรายเดือน / โปรไฟล์ featured / รับบริจาค
+ 13. SEO: เปลี่ยนเป็น BrowserRouter + meta tags ต่อหน้า
+ 14. i18n framework สำหรับขยายตลาด不同ภาษา
+ 15. Accessibility audit เต็มรูปแบบ
+
+--------------------------------------------------------------------------------
+11. วิธีรัน (HOW TO RUN)
+--------------------------------------------------------------------------------
+  npm install            # ติดตั้งครั้งแรก
+  npm run dev            # http://localhost:3000 (โหมด demo ถ้าไม่มี .env)
+  npm run build          # ตรวจก่อน commit เสมอ (tsc --noEmit && vite build)
+  npm run preview        # ดู build จริง
+
+ต่อ DB จริง:
+  1. สร้างโปรเจกต์ที่ supabase.com
+  2. รัน supabase/schema.sql ใน SQL Editor
+  3. รัน supabase/migration-feed-latlng.sql (เปิดฟีด+lat/lng)
+  4. คัดลอก .env.example → .env ใส่ URL + anon key (+ GEMINI_API_KEY ถ้ามี AI)
+  5. รัน SQL เพิ่มเติมตามต้องการ (follows/ai-configs/storage/ฯลฯ)
+  6. รีสตาร์ท → สมัคร/ล็อกอิน/โปรไฟล์/ฟีด ทำงานจริง
+
+--------------------------------------------------------------------------------
+12. แผนที่ไฟล์สำคัญ (FILE MAP)
+--------------------------------------------------------------------------------
+  App.tsx                     → Routing + RequireAuth guard + chrome visibility
+  index.tsx                   → Entry point (providers)
+  contexts/AuthContext.tsx    → State กลาง + auth + feed + admin + presence
+  contexts/ThemeContext.tsx   → ธีม
+  contexts/supabaseClient.ts  → Supabase client + demo fallback
+  pages/Login.tsx             → หน้าเข้าหลัก (โหมด 4 + FeedBackdrop เบลอ)
+  pages/Feed.tsx              → ฟีด Facebook-style
+  pages/Dashboard.tsx         → พอร์ตโฟลิโอ + แผนที่
+  pages/Explore.tsx           → แผนที่คนใกล้เคียง
+  pages/Vote.tsx              → โหวตคำถาม
+  pages/Profile.tsx           → โปรไฟล์ /username
+  pages/AdminPanel.tsx        → แอดมิน
+  components/AiMascot.tsx      → ตัวการ์ตูน AI
+  components/Navbar.tsx        → นำทางสไตล์ Facebook
+  components/ErrorBoundary.tsx → กันหน้าว่าง
+  components/ui/*              → Button/Card/Input/Modal
+  lib/designTokens.ts         → ดีไซน์ซิสเต็ม
+  lib/ranking.ts              → จัดอันดับ + haversine
+  lib/social.ts               → ตรวจโซเชียล + ตรวจ URL ปลอดภัย
+  Server/ai.js                → AI serverless (Gemini)
+  supabase/*.sql              → schema + migrations (idempotent)
+  constants.ts                → 77 จังหวัด + คำลอย
+  .claude/agents/qa.md        → หัวหน้า QA ตรวจรับงานตามคำสั่งผู้ใช้
+  .claude/agents/problem-solver.md / design-reviewer.md → ตัวช่วย AI Loop
+
+================================================================================
+จบเอกสารสรุป — นำไปวิเคราะห์เพื่อวางแผน "Zeelink เวอร์ชั่นสมบูรณ์" ต่อได้เลย
+================================================================================
