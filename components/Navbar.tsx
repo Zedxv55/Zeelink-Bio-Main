@@ -3,18 +3,18 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  Home, User, Map, Vote, Newspaper, LogOut, Sun, Moon, Search,
+  Home, User, Map, Vote, Newspaper, LogOut, Sun, Moon,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Button } from './ui/Button';
 import { fonts, fontSize, spacing, palette, radius } from '../lib/designTokens';
 
-// ===== รายการนำทางหลัก (ใช้ร่วม sidebar + bottom bar) =====
+// ===== รายการนำทางหลัก (ใช้ร่วม sidebar + top-bar มือถือ) =====
 interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  public?: boolean; // เข้าได้แม้ไม่ล็อกอิน
+  public?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -26,9 +26,8 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const HEADER_H = '56px';
-const SIDEBAR_W_MD = '72px';   // แท็บเล็ต: ไอคอน-only
-const SIDEBAR_W_LG = '248px';  // เดสก์ท็อป: ไอคอน + ป้ายชื่อ
-const BOTTOMBAR_H = '56px';
+const SIDEBAR_W_MD = '72px';
+const SIDEBAR_W_LG = '248px';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -36,12 +35,9 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const handleLogout = async () => {
     await logout();
     navigate('/');
-    setMobileMenuOpen(false);
   };
 
   const isActive = (to: string): boolean => {
@@ -49,16 +45,11 @@ export const Navbar: React.FC = () => {
     return location.pathname.startsWith(to);
   };
 
-  // ปุ่มสุดท้ายของ bottom bar: โปรไฟล์ (ล็อกอินแล้ว) หรือ เข้าสู่ระบบ
-  const lastItem = user
-    ? { to: '/dashboard', label: 'โปรไฟล์', icon: User }
-    : { to: '/login', label: 'เข้าสู่ระบบ', icon: User };
-
   return (
     <>
-      {/* ============ TOP HEADER (ทุกขนาด) ============ */}
+      {/* ============ TOP HEADER (ทุกขนาด — สไตล์ Facebook) ============ */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 sm:px-4"
         style={{
           height: HEADER_H,
           background: 'var(--glass-bg)',
@@ -70,7 +61,26 @@ export const Navbar: React.FC = () => {
           <Logo size={32} variant={theme === 'dark' ? 'light' : 'dark'} withWordmark />
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* ไอคอนนำทางบนมือถือ (ใต้ md) — สไตล์แถบบน Facebook มือถือ */}
+          <div className="flex items-center gap-0.5 md:hidden">
+            {NAV_ITEMS.slice(1, 4).map(item => {
+              const Icon = item.icon;
+              const active = isActive(item.to);
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  aria-label={item.label}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: active ? palette.orange : 'var(--text-secondary)' }}
+                >
+                  <Icon size={22} />
+                </Link>
+              );
+            })}
+          </div>
+
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg transition-colors"
@@ -102,15 +112,14 @@ export const Navbar: React.FC = () => {
         </div>
       </header>
 
-      {/* ============ LEFT SIDEBAR (เดสก์ท็อป/แท็บเล็ต) ============ */}
+      {/* ============ LEFT SIDEBAR (เดสก์ท็อป/แท็บเล็ต เท่านั้น) ============ */}
       <aside
-        className="hidden md:flex flex-col fixed z-40 flex-col py-4 border-r"
+        className="hidden md:flex flex-col fixed z-40 py-4 border-r"
         style={{
           top: HEADER_H,
           bottom: 0,
           left: 0,
           width: SIDEBAR_W_MD,
-          // lg ขึ้นไป ขยายเป็นเต็ม + ป้ายชื่อ
           background: 'var(--glass-bg)',
           borderColor: 'var(--glass-border)',
         }}
@@ -140,7 +149,6 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* ส่วนล่าง sidebar: ออกจากระบบ (เดสก์ท็อป) */}
         {user && (
           <div className="px-2 mt-2 border-t pt-3" style={{ borderColor: 'var(--glass-border)' }}>
             <button
@@ -154,48 +162,6 @@ export const Navbar: React.FC = () => {
           </div>
         )}
       </aside>
-
-      {/* ============ BOTTOM TAB BAR (มือถือ) ============ */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch justify-around border-t"
-        style={{
-          height: BOTTOMBAR_H,
-          background: 'var(--glass-bg)',
-          borderColor: 'var(--glass-border)',
-          backdropFilter: 'blur(12px)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-      >
-        {NAV_ITEMS.slice(0, 4).map(item => {
-          const Icon = item.icon;
-          const active = isActive(item.to);
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="flex flex-col items-center justify-center flex-1 gap-0.5"
-              style={{ color: active ? palette.orange : 'var(--text-secondary)', fontFamily: fonts.body }}
-              aria-current={active ? 'page' : undefined}
-              aria-label={item.label}
-            >
-              <Icon size={22} />
-              <span style={{ fontSize: '10px', fontWeight: active ? 700 : 500 }}>{item.label}</span>
-            </Link>
-          );
-        })}
-        <Link
-          to={lastItem.to}
-          className="flex flex-col items-center justify-center flex-1 gap-0.5"
-          style={{
-            color: isActive(lastItem.to) ? palette.orange : 'var(--text-secondary)',
-            fontFamily: fonts.body,
-          }}
-          aria-label={lastItem.label}
-        >
-          <User size={22} />
-          <span style={{ fontSize: '10px', fontWeight: isActive(lastItem.to) ? 700 : 500 }}>{lastItem.label}</span>
-        </Link>
-      </nav>
     </>
   );
 };
