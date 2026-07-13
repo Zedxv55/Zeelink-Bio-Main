@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
-import { fonts, palette } from '../lib/designTokens';
-import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X, Search } from 'lucide-react';
+import { fonts, palette, lineHeight } from '../lib/designTokens';
+import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X, Search, User } from 'lucide-react';
 
 // จับ URL รูป/วิดีโอ จากข้อความ (รองรับแชร์ลิงก์ media แบบเดียวกับ Facebook)
 const detectMedia = (text: string): { url?: string; type: 'none' | 'image' | 'video' } => {
@@ -252,7 +252,26 @@ export const Feed: React.FC = () => {
           ))}
 
           {posts.length === 0 && (
-            <div className="text-center py-10 opacity-50">ยังไม่มีโพสต์ ลองแชร์ผลงานแรกของคุณ!</div>
+            user ? (
+              // Onboarding (P0): ผู้ใช้ใหม่หลงทาง → ชวนทำงานแรกสุด
+              <div className="glass-card p-6 text-center border-[var(--orange)] animate-fade-in">
+                <div className="text-4xl mb-3">👋</div>
+                <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>ยินดีต้อนรับสู่ฟีดของคุณ!</h3>
+                <p className="text-sm opacity-70 mb-4" style={{ lineHeight: lineHeight.normal }}>
+                  เริ่มต้นง่ายๆ แค่ 3 ขั้นตอน: ตั้งโปรไฟล์ → แชร์ผลงาน → ติดตามเพื่อน
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Button variant="primary" size="sm" leftIcon={<User size={14} />} onClick={() => navigate('/dashboard')}>
+                    ตั้งโปรไฟล์
+                  </Button>
+                  <Button variant="ghost" size="sm" leftIcon={<Newspaper size={14} />} onClick={() => navigate('/explore')}>
+                    ไปค้นหาเพื่อน
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-10 opacity-50">ยังไม่มีโพสต์ ลองแชร์ผลงานแรกของคุณ!</div>
+            )
           )}
           {posts.length > 0 && visiblePosts.length === 0 && (
             <div className="text-center py-10 opacity-50">ไม่พบโพสต์ที่ตรงกับ &quot;{search}&quot;</div>

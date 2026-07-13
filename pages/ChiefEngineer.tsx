@@ -70,8 +70,8 @@ const ISSUES: IssueItem[] = [
     id: 'onboarding',
     priority: 'P0',
     title: 'ผู้ใช้ใหม่หลงทางหลังล็อกอิน',
-    detail: 'เพิ่ม intro tour / empty-state ที่ชวนทำแรกสุด (ตั้งโปรไฟล์ → แชร์ผลงาน → ติดตาม)',
-    status: 'todo',
+    detail: 'เพิ่ม onboarding empty-state บน Feed (ผู้ใช้ล็อกอินแล้วไม่มีโพสต์ → ชวนตั้งโปรไฟล์/หาเพื่อน)',
+    status: 'done',
   },
 ];
 
