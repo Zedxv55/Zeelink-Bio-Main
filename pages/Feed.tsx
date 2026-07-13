@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Post } from '../types';
+import { Post, Profile } from '../types';
 import { GlassBackground } from '../components/GlassBackground';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { haversineKm } from '../lib/ranking';
 import { fonts, palette, lineHeight } from '../lib/designTokens';
 import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X, Search, User } from 'lucide-react';
 
@@ -27,7 +29,7 @@ const timeAgo = (iso: string): string => {
 };
 
 export const Feed: React.FC = () => {
-  const { user, profile, posts, createPost, toggleLikePost, addComment, uploadPostMedia } = useAuth();
+  const { user, profile, posts, createPost, toggleLikePost, addComment, uploadPostMedia, usersList, followingIds, followUser } = useAuth();
   const navigate = useNavigate();
 
   const [text, setText] = useState('');
@@ -52,6 +54,22 @@ export const Feed: React.FC = () => {
       p.username.toLowerCase().includes(q)
     );
   }, [posts, search]);
+
+  // "คนใกล้คุณ" สำหรับคอลัมน์ขวา (เดสก์ท็อป) — คล้าย People You May Know ของ Facebook
+  const suggestions = useMemo(() => {
+    const others = usersList.filter(u => u.id !== profile?.id && u.showOnExplore);
+    const me = profile && profile.lat ? { lat: profile.lat, lng: profile.lng } : null;
+    const sorted = [...others].sort((a, b) => {
+      const fa = followingIds.includes(a.userId) ? 1 : 0;
+      const fb = followingIds.includes(b.userId) ? 1 : 0;
+      if (fa !== fb) return fa - fb; // ยังไม่ได้ติดตามขึ้นก่อน
+      if (me && a.lat && b.lat) {
+        return haversineKm(me, { lat: a.lat, lng: a.lng }) - haversineKm(me, { lat: b.lat, lng: b.lng });
+      }
+      return (b.likes || 0) - (a.likes || 0);
+    });
+    return sorted.slice(0, 6);
+  }, [usersList, followingIds, profile]);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,7 +115,10 @@ export const Feed: React.FC = () => {
   return (
     <GlassBackground>
       <div className="min-h-screen pt-24 pb-20 px-4" style={{ fontFamily: fonts.body }}>
-        <div className="max-w-2xl mx-auto space-y-5">
+        <div className="max-w-2xl mx-auto space-y-5 xl:max-w-6xl xl:flex xl:gap-6 xl:space-y-0">
+
+          {/* ===== คอลัมน์กลาง (ฟีด) ===== */}
+          <div className="min-w-0 flex-1 space-y-5">
 
           {/* ===== Header ===== */}
           <div className="flex items-center gap-3 mb-2">
@@ -276,6 +297,14 @@ export const Feed: React.FC = () => {
           {posts.length > 0 && visiblePosts.length === 0 && (
             <div className="text-center py-10 opacity-50">ไม่พบโพสต์ที่ตรงกับ &quot;{search}&quot;</div>
           )}
+          </div>
+
+          {/* ===== คอลัมน์ขวา (เดสก์ท็อป xl ขึ้นไป) ===== */}
+          <aside className="hidden xl:block w-80 flex-shrink-0">
+            <div className="sticky top-20 space-y-4">
+              <NearbyWidget suggestions={suggestions} followingIds={followingIds} onFollow={followUser} />
+            </div>
+          </aside>
         </div>
       </div>
     </GlassBackground>
@@ -283,3 +312,55 @@ export const Feed: React.FC = () => {
 };
 
 export default Feed;
+
+// ===== คอลัมน์ขวา: คนใกล้คุณ (คล้าย People You May Know ของ Facebook) =====
+const NearbyWidget: React.FC<{
+  suggestions: Profile[];
+  followingIds: string[];
+  onFollow: (id: string) => void;
+}> = ({ suggestions, followingIds, onFollow }) => {
+  const navigate = useNavigate();
+  if (suggestions.length === 0) return null;
+  return (
+    <Card padding="md" accent="blue">
+      <div className="flex items-center gap-2 mb-3">
+        <Map size={18} style={{ color: palette.blue }} />
+        <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}>
+          คนใกล้คุณ
+        </h3>
+      </div>
+      <div className="space-y-2">
+        {suggestions.map(u => {
+          const isFollowing = followingIds.includes(u.userId);
+          return (
+            <div key={u.id} className="flex items-center gap-3">
+              <button onClick={() => navigate(`/${u.username}`)} className="flex-shrink-0">
+                <img src={u.photoUrl} alt={u.displayName} className="w-10 h-10 rounded-full object-cover border" style={{ borderColor: 'var(--glass-border)' }} />
+              </button>
+              <div className="flex-1 min-w-0">
+                <button onClick={() => navigate(`/${u.username}`)} className="block truncate text-sm font-bold hover:underline" style={{ color: 'var(--text-primary)' }}>
+                  {u.displayName}
+                </button>
+                <p className="text-[11px] opacity-60 truncate">{u.province || 'ครีเอเตอร์ไทย'}</p>
+              </div>
+              <button
+                onClick={() => onFollow(u.userId)}
+                disabled={isFollowing}
+                className="px-3 py-1 rounded-lg text-xs font-bold flex-shrink-0 transition-colors"
+                style={{
+                  color: isFollowing ? 'var(--text-secondary)' : palette.orange,
+                  background: isFollowing ? 'var(--glass-border)' : palette.orangeSoft,
+                }}
+              >
+                {isFollowing ? 'ติดตามแล้ว' : 'ติดตาม'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <button onClick={() => navigate('/explore')} className="w-full mt-3 text-xs font-bold py-2 rounded-lg hover:bg-white/10" style={{ color: palette.blue }}>
+        ดูแผนที่ทั้งหมด →
+      </button>
+    </Card>
+  );
+};
