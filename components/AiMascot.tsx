@@ -206,7 +206,7 @@ export const AiMascot: React.FC = () => {
       <button
         onClick={() => setOpen(o => !o)}
         title="น้องซี — แอดมินจำลอง"
-        className="fixed bottom-5 right-5 z-[146] cursor-pointer select-none"
+        className="fixed bottom-20 right-5 z-[146] cursor-pointer select-none md:bottom-5"
         aria-label="เปิดแชทกับแอดมินจำลอง"
       >
         <div className="relative" style={{ animation: 'mascotBob 2.4s ease-in-out infinite' }}>
@@ -248,7 +248,7 @@ export const AiMascot: React.FC = () => {
 
       {/* แชท面板 */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-[147] w-[340px] max-w-[92vw] h-[460px] max-h-[80vh] glass-card border-[var(--orange)] flex flex-col shadow-2xl animate-fade-in" style={{ background: 'var(--glass-bg)' }}>
+        <div className="fixed bottom-20 right-5 z-[147] w-[340px] max-w-[92vw] h-[460px] max-h-[80vh] glass-card border-[var(--orange)] flex flex-col shadow-2xl animate-fade-in md:bottom-5" style={{ background: 'var(--glass-bg)' }}>
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b-2" style={{ borderColor: 'var(--glass-border)' }}>
             <div className="flex items-center gap-2">

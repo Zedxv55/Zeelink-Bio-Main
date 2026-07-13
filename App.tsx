@@ -38,16 +38,19 @@ const App: React.FC = () => {
         {activePopup?.content && <div>{activePopup.content}</div>}
       </Modal>
 
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/feed" element={<Feed />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/vote" element={<Vote />} />
-        <Route path="/:username" element={<ProfilePage />} />
-      </Routes>
+      {/* เว้นระยะซ้ายให้ left sidebar (เดสก์ท็อป/แท็บเล็ต) — จอเล็กไม่มี sidebar */}
+      <div className="md:pl-[72px] lg:pl-[248px]">
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/vote" element={<Vote />} />
+          <Route path="/:username" element={<ProfilePage />} />
+        </Routes>
+      </div>
     </>
   );
 };
