@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { AiMascot } from './components/AiMascot';
-import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Explore } from './pages/Explore';
 import { Vote } from './pages/Vote';
@@ -14,7 +13,7 @@ import { Modal } from './components/ui/Modal';
 import { useAuth } from './contexts/AuthContext';
 
 const App: React.FC = () => {
-  const { isLoading, activePopup, closeActivePopup } = useAuth();
+  const { user, isLoading, activePopup, closeActivePopup } = useAuth();
 
   if (isLoading) {
     return <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading Zeelink System...</div>;
@@ -24,7 +23,6 @@ const App: React.FC = () => {
     <>
       <Navbar />
       <AiMascot />
-
 
       {/* Global Popup System */}
       <Modal
@@ -41,7 +39,8 @@ const App: React.FC = () => {
       {/* เว้นระยะซ้ายให้ left sidebar (เดสก์ท็อป/แท็บเล็ต) — จอเล็กไม่มี sidebar */}
       <div className="md:pl-[72px] lg:pl-[248px]">
         <Routes>
-          <Route path="/" element={<Landing />} />
+          {/* หน้าแรก = ฟีดทุกคน (ล็อกอินแล้ว) หรือหน้า Login (ยังไม่ล็อกอิน) */}
+          <Route path="/" element={user ? <Feed /> : <Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/dashboard" element={<Dashboard />} />
