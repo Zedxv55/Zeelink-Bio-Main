@@ -7,7 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { haversineKm } from '../lib/ranking';
 import { fonts, palette, lineHeight } from '../lib/designTokens';
-import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X, Search, User } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X, Search, User, Map as MapIcon } from 'lucide-react';
 
 // จับ URL รูป/วิดีโอ จากข้อความ (รองรับแชร์ลิงก์ media แบบเดียวกับ Facebook)
 const detectMedia = (text: string): { url?: string; type: 'none' | 'image' | 'video' } => {
@@ -336,7 +336,7 @@ const NearbyWidget: React.FC<{
   return (
     <Card padding="md" accent="blue">
       <div className="flex items-center gap-2 mb-3">
-        <Map size={18} style={{ color: palette.blue }} />
+        <MapIcon size={18} style={{ color: palette.blue }} />
         <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}>
           คนใกล้คุณ
         </h3>

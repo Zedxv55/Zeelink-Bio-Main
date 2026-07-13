@@ -20,6 +20,36 @@ const FLOAT_POS = [
   { top: '16%', left: '52%', dur: 10, dx: 18 }, { top: '88%', left: '30%', dur: 9, dx: -10 },
 ];
 
+// ===== พื้นหลังฟีดเบลอๆ  behind หน้า Login (ตามที่ผู้ใช้ต้องการ) =====
+const FeedBackdrop: React.FC = () => {
+  const samples = [
+    { name: 'มาลี วาดรูป', text: 'แชร์ผลงานวาดรูปล่าสุดของฉัน ✏️ รับจ้างออกแบบได้นะ 💌', img: 'https://picsum.photos/seed/zeelinkart/600/360' },
+    { name: 'โต้ง สอนโค้ด', text: 'คลิปสอนฟรี: สร้างพอร์ตเว็บด้วย React ภายใน 10 นาที 🚀' },
+    { name: 'Admin Zeetosit', text: '🎉 ยินดีต้อนรับสู่ Zeelink! แพลตฟอร์มพอร์ตโฟลิโอเชิงสังคมสำหรับคนไทย 🧡 #คนไทยไม่แพ้ใคร' },
+  ];
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      <div
+        className="absolute inset-0 flex flex-col gap-5 px-4 py-24 max-w-2xl mx-auto w-full"
+        style={{ filter: 'blur(10px)', transform: 'scale(1.06)', opacity: 0.55 }}
+      >
+        {samples.map((s, i) => (
+          <div key={i} className="glass-card p-4" style={{ borderColor: 'var(--orange)' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-full" style={{ background: 'linear-gradient(135deg,#FFB066,#FF7A2F)' }} />
+              <div className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontFamily: "'IBM Plex Sans Thai', sans-serif" }}>{s.name}</div>
+            </div>
+            <p className="text-sm mb-2" style={{ color: 'var(--text-primary)' }}>{s.text}</p>
+            {s.img && <div className="rounded-xl h-40" style={{ background: `url(${s.img}) center/cover` }} />}
+          </div>
+        ))}
+      </div>
+      {/* ทับสีดำให้การ์ดล็อกอินเด่นขึ้น */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.30), rgba(0,0,0,0.55))' }} />
+    </div>
+  );
+};
+
 export const Login: React.FC = () => {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -30,7 +60,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { login, register, resetPassword } = useAuth();
+  const { user, login, register, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   // ถ้าเปิดหน้านี้มาจากลิงก์รีเซ็ตรหัสผ่าน (Supabase ส่ง session มาใน URL)
@@ -77,8 +107,14 @@ export const Login: React.FC = () => {
       }
 
       if (mode === 'login') {
-        const { user, error: loginErr } = await login(email, password, remember);
+        // หากเปิดแอปมาแล้วมี session ที่ "จำรหัสผ่าน" ไว้ (user ถูกกู้คืนอัตโนมัติ)
+        // ให้ข้ามการ sign-in ซ้ำ (กัน error จากการล็อกอินซ้ำ) แล้วเข้าใช้งานเลย
         if (user) {
+          navigate('/feed');
+          return;
+        }
+        const { user: loggedIn, error: loginErr } = await login(email, password, remember);
+        if (loggedIn) {
           localStorage.setItem('zeelink_remember_email', email);
           navigate('/feed');
         } else {
@@ -113,6 +149,8 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+      {/* พื้นหลังฟีดเบลอๆ */}
+      <FeedBackdrop />
       <ThaiBackground />
 
       {/* ข้อความลอยเด้งไปมา (คำกวนๆ ช้างกูอยู่ไหน ฯลฯ) — ชีวิตชีวา ไม่หน่วง */}
