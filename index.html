@@ -380,6 +380,18 @@
       .pixel-cta{ font-family:'Press Start 2P', monospace; font-size:11px; padding:10px 14px; border:2px solid var(--orange); background:var(--orange); color:#fff; box-shadow:3px 3px 0 var(--text-primary); text-decoration:none; display:inline-flex; align-items:center; }
       .pixel-cta:hover{ transform:translate(-1px,-1px); }
       .pixel-cta-alt{ font-family:'Press Start 2P', monospace; font-size:11px; padding:9px 13px; border:2px solid var(--text-primary); background:transparent; color:var(--text-primary); text-decoration:none; display:inline-flex; align-items:center; }
+
+      /* ===== A11y: โฟกัสชัดเจนสำหรับคีย์บอร์ด (ถูกใจคนใช้เทคโนิโลยีช่วย) ===== */
+      :focus-visible{ outline:2px solid var(--orange); outline-offset:2px; border-radius:2px; }
+      /* ลดอนิเมชั่นสำหรับผู้ใช้ที่ตั้งระบบไว้ (ไม่ให้วิงเวียน/เมื่อยล้า) */
+      @media (prefers-reduced-motion: reduce){
+        *, *::before, *::after{
+          animation-duration:0.001ms !important;
+          animation-iteration-count:1 !important;
+          transition-duration:0.001ms !important;
+          scroll-behavior:auto !important;
+        }
+      }
     </style>
   </head>
   <body>

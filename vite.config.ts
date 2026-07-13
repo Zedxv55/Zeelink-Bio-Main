@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 
 // ===== Dev-only middleware: เสิร์ฟ POST /api/ai ในตอนรัน `npm run dev` =====
 // ปกติ Vercel จะรัน api/ai.js เป็น serverless function แต่ตอน dev (vite) ไม่มี server
-// ปลั๊กตัวนี้ให้เรียก Groq โดยตรงด้วยคีย์จาก .env (AI_API_KEY) เพื่อให้เทส AI ได้ในเครื่อง
+// ปลั๊กตัวนี้ให้เรียก Gemini (เหมือน Server/ai.js) ด้วยคีย์ GEMINI_API_KEY เพื่อให้ dev/prod ใช้ AI ตัวเดียวกัน
 function aiDevPlugin(env: Record<string, string>) {
   return {
     name: 'ai-dev-server',
@@ -30,10 +30,10 @@ function aiDevPlugin(env: Record<string, string>) {
               res.statusCode = 400;
               return res.end(JSON.stringify({ error: 'ข้อความยาวเกินไป (สูงสุด 2000 ตัวอักษร)' }));
             }
-            const apiKey = env.AI_API_KEY;
-            const apiUrl = env.AI_API_URL || 'https://api.groq.com/openai/v1/chat/completions';
+            const apiKey = env.GEMINI_API_KEY;
+            const apiUrl = env.AI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
             if (!apiKey) {
-              return res.end(JSON.stringify({ reply: 'ขออภัยครับ ระบบ AI ยังไม่พร้อม (ไม่พบ AI_API_KEY ในฝั่ง server)' }));
+              return res.end(JSON.stringify({ reply: 'ขออภัยครับ ระบบ AI ยังไม่พร้อม (ไม่พบ GEMINI_API_KEY ในฝั่ง server)' }));
             }
             const systemPrompt = [
               'คุณคือ "แอดมินจำลอง" ผู้ช่วยใจดีของแพลตฟอร์ม Zeelink (ลิงก์ในไบโอสำหรับครีเอเตอร์ไทย)',
@@ -43,17 +43,12 @@ function aiDevPlugin(env: Record<string, string>) {
             ].join(' ');
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 15000);
-            const response = await fetch(apiUrl, {
+            const response = await fetch(`${apiUrl}?key=${apiKey}`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                model: env.AI_MODEL || 'llama-3.3-70b-versatile',
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: `${userName ? `ผู้ใช้ชื่อ ${userName} ถามว่า: ` : ''}${message}` },
-                ],
-                temperature: 0.7,
-                max_tokens: 300,
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: `${userName ? `ผู้ใช้ชื่อ ${userName} ถามว่า: ` : ''}${message}` }] }],
               }),
               signal: controller.signal,
             });
@@ -62,7 +57,7 @@ function aiDevPlugin(env: Record<string, string>) {
               return res.end(JSON.stringify({ reply: 'ขออภัยครับ ตอนนี้ AI ติดขัดชั่วคราว ลองถามใหม่ภายหลังนะครับ' }));
             }
             const data = await response.json();
-            const reply = data?.choices?.[0]?.message?.content?.trim() || 'ไม่มีคำตอบ';
+            const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'ไม่มีคำตอบ';
             res.end(JSON.stringify({ reply }));
           } catch {
             res.end(JSON.stringify({ reply: 'ขออภัยครับ ระบบ AI ไม่ตอบสนอง ลองใหม่อีกครั้ง' }));
