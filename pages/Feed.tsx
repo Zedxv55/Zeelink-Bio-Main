@@ -133,14 +133,17 @@ export const Feed: React.FC = () => {
           <div className="min-w-0 flex-1 space-y-5">
 
           {/* ===== Header ===== */}
-          <div className="flex items-center gap-3 mb-2">
-            <Newspaper size={26} style={{ color: palette.orange }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>ฟีด</h1>
+          <div className="mb-2">
+            <p className="font-mono text-[11px] tracking-[0.18em] uppercase mb-1" style={{ color: 'var(--blueprint)' }}>Feed · ฟีดของคุณ</p>
+            <div className="flex items-center gap-3">
+              <Newspaper size={26} style={{ color: palette.orange }} />
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>ฟีด</h1>
+            </div>
           </div>
 
           {/* ===== Composer (ล็อกอินแล้วเท่านั้น) ===== */}
           {user ? (
-            <div className="glass-card p-4 border-[var(--orange)] animate-fade-in">
+            <div className="glass-card p-4 border-[var(--glass-border)] animate-fade-in">
               <div className="flex gap-3">
                 <img src={profile?.photoUrl || user.photoUrl} className="w-10 h-10 rounded-full object-cover border-2" style={{ borderColor: palette.orange }} />
                 <div className="flex-1">
@@ -179,7 +182,7 @@ export const Feed: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="glass-card p-5 text-center border-[var(--orange)]">
+            <div className="glass-card p-5 text-center border-[var(--glass-border)]">
               <p className="mb-3" style={{ color: 'var(--text-secondary)' }}>เข้าสู่ระบบเพื่อแชร์ผลงานและโพสต์ของคุณ</p>
               <Button variant="primary" size="sm" onClick={() => navigate('/login')}>เข้าสู่ระบบ</Button>
             </div>
@@ -205,7 +208,7 @@ export const Feed: React.FC = () => {
 
           {/* ===== Feed Posts ===== */}
           {visiblePosts.map(post => (
-            <article key={post.id} className="glass-card p-4 border-[var(--orange)]/30 animate-fade-in">
+            <article key={post.id} className="glass-card p-4 border-[var(--glass-border)] animate-fade-in">
               {/* Author */}
               <div className="flex items-center gap-3 mb-3">
                 <button onClick={() => navigate(`/${post.username}`)}>
@@ -287,7 +290,7 @@ export const Feed: React.FC = () => {
           {posts.length === 0 && (
             user ? (
               // Onboarding (P0): ผู้ใช้ใหม่หลงทาง → ชวนทำงานแรกสุด
-              <div className="glass-card p-6 text-center border-[var(--orange)] animate-fade-in">
+              <div className="glass-card p-6 text-center border-[var(--glass-border)] animate-fade-in">
                 <div className="text-4xl mb-3">👋</div>
                 <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>ยินดีต้อนรับสู่ฟีดของคุณ!</h3>
                 <p className="text-sm opacity-70 mb-4" style={{ lineHeight: lineHeight.normal }}>
@@ -335,11 +338,14 @@ const NearbyWidget: React.FC<{
   if (suggestions.length === 0) return null;
   return (
     <Card padding="md" accent="blue">
-      <div className="flex items-center gap-2 mb-3">
-        <MapIcon size={18} style={{ color: palette.blue }} />
-        <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}>
-          คนใกล้คุณ
-        </h3>
+      <div className="mb-3">
+        <p className="font-mono text-[10px] tracking-[0.18em] uppercase mb-1" style={{ color: 'var(--blueprint)' }}>Nearby · คนใกล้คุณ</p>
+        <div className="flex items-center gap-2">
+          <MapIcon size={18} style={{ color: palette.blue }} />
+          <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}>
+            คนใกล้คุณ
+          </h3>
+        </div>
       </div>
       <div className="space-y-2">
         {suggestions.map(u => {
