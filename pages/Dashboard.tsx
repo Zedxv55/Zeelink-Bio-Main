@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { THAI_REGIONS, AVAILABLE_FONTS } from '../constants';
 import { Link, Profile, ThemeConfig } from '../types';
-import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon, GripVertical, LocateFixed } from 'lucide-react';
+import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon, GripVertical, LocateFixed, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
@@ -62,6 +62,9 @@ export const Dashboard: React.FC = () => {
   });
 
   const [showOnExplore, setShowOnExplore] = useState(true);
+  // รับบริจาค/Support ผ่าน PromptPay
+  const [acceptSupport, setAcceptSupport] = useState(false);
+  const [promptpay, setPromptpay] = useState('');
   // Demo social links (shown in preview mode before login)
   const [links, setLinks] = useState<Link[]>([
     { id: 'demo1', title: 'Facebook', url: 'https://facebook.com/zeelink', clicks: 0, isActive: true },
@@ -146,6 +149,8 @@ export const Dashboard: React.FC = () => {
       setShowOnExplore(profile.showOnExplore);
       setLinks(profile.links || []);
       setPortfolioImages(profile.portfolioImages || []);
+      setAcceptSupport(profile.themeConfig?.acceptSupport || false);
+      setPromptpay(profile.themeConfig?.promptpay || '');
 
       if (profile.themeConfig) setThemeConfig(profile.themeConfig);
 
@@ -285,7 +290,7 @@ export const Dashboard: React.FC = () => {
       showOnExplore,
       likes: profile?.likes || 0,
       views: profile?.views || 0,
-      themeConfig,
+      themeConfig: { ...themeConfig, acceptSupport, promptpay: promptpay.trim() },
       links,
       createdAt: profile?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -552,6 +557,29 @@ export const Dashboard: React.FC = () => {
                                 <p className="text-[11px] opacity-50 text-center py-2">ยังไม่มีลิงก์ เพิ่ม Facebook, Instagram, TikTok, GitHub, Line ฯลฯ ได้เลย</p>
                               )}
                            </div>
+                      </div>
+
+                      {/* รับบริจาค / Support ผ่าน PromptPay */}
+                      <div className="glass-card p-6 space-y-4 border-yellow">
+                          <h3 className="font-bold flex items-center"><Heart className="mr-2 text-yellow-500" /> รับบริจาค / Support (PromptPay)</h3>
+                          <p className="text-[11px] opacity-70 leading-relaxed">เปิดให้ผู้ชมกดสนับสนุนคุณผ่าน QR PromptPay โดยไม่เสียค่าธรรมเนียม gateway</p>
+                          <div className="flex items-center justify-between p-4 bg-black/10 rounded-lg">
+                              <span className="text-sm font-bold">เปิดรับบริจาค</span>
+                              <button onClick={() => setAcceptSupport(!acceptSupport)} aria-label="เปิดรับบริจาค" className={`w-12 h-6 rounded-full transition-colors ${acceptSupport ? 'bg-green-500' : 'bg-gray-400'}`}><div className={`w-4 h-4 bg-white rounded-full transform transition-transform ${acceptSupport ? 'translate-x-7' : 'translate-x-1'} mt-1`} /></button>
+                          </div>
+                          <div>
+                              <label className="text-xs font-bold">เบอร์ PromptPay (10 หลัก) หรือ เลขบัตรประชาชน (13 หลัก)</label>
+                              <input
+                                value={promptpay}
+                                onChange={e => setPromptpay(e.target.value.replace(/[^0-9]/g, '').slice(0, 13))}
+                                inputMode="numeric"
+                                placeholder="0812345678"
+                                className="w-full p-3 rounded-lg mt-1 bg-black/10 border border-white/10 font-mono"
+                              />
+                              {acceptSupport && promptpay.length !== 10 && promptpay.length !== 13 && (
+                                <p className="text-[10px] text-red-400 mt-1">⚠️ ต้องกรอกเบอร์ 10 หลัก หรือเลขบัตร 13 หลัก</p>
+                              )}
+                          </div>
                       </div>
                   </div>
               )}

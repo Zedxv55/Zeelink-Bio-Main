@@ -8,6 +8,9 @@ export interface ThemeConfig {
   layout: 'minimal' | 'modern' | 'creative' | 'glass'; // Added glass
   backgroundImageUrl?: string; // Wallpaper
   enableGlassEffect?: boolean;
+  // รับบริจาค/Support ผ่าน PromptPay (ไม่เสียค่าธรรมเนียม gateway)
+  promptpay?: string; // เบอร์โทรศัพท์ 10 หลัก หรือเลขบัตรประชาชน 13 หลัก
+  acceptSupport?: boolean;
 }
 
 export interface User {

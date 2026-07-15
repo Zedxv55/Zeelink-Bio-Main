@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Profile as ProfileType } from '../types';
 import { MapPin, Heart, Eye, Calendar, Map as MapIcon, Image as ImageIcon, UserPlus, UserCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { fonts, fontSize, palette } from '../lib/designTokens';
 import { detectPlatform, isValidUrl } from '../lib/social';
 import { supabase } from '../contexts/supabaseClient';
@@ -43,6 +44,13 @@ export const ProfilePage: React.FC = () => {
   // กดใจรูปภาพในพอร์ต (เซสชันนี้) — ยังไม่มีตารางแยก จึงเก็บฝั่ง client
   const [likedImages, setLikedImages] = useState<Set<number>>(new Set());
   const canFollow = !!user && profile && user.id !== profile.userId;
+  // รับบริจาค/Support
+  const [supportOpen, setSupportOpen] = useState(false);
+  const promptpay = profile.themeConfig?.promptpay || '';
+  const acceptSupport = profile.themeConfig?.acceptSupport || false;
+  const supportEnabled = acceptSupport && (promptpay.length === 10 || promptpay.length === 13);
+  // promptpay.io สร้าง QR PromptPay ฟรี (EMVCo) โดยไม่ต้องคีย์/dependency
+  const promptpayQr = supportEnabled ? `https://promptpay.io/${promptpay}.png` : '';
   const toggleImageLike = (i: number) => {
     setLikedImages(prev => {
       const next = new Set(prev);
@@ -184,6 +192,15 @@ export const ProfilePage: React.FC = () => {
                      <span>{isFollowing(profile.userId) ? 'กำลังติดตาม' : 'ติดตาม'}</span>
                    </button>
                  )}
+                 {supportEnabled && (
+                   <button
+                     onClick={() => setSupportOpen(true)}
+                     className="flex items-center space-x-2 px-6 py-3 rounded-full font-bold shadow-lg transition-all hover:scale-105"
+                     style={{ backgroundColor: '#E8B23D', color: '#1F1B16' }}
+                   >
+                     <Heart size={18} /> <span>สนับสนุน</span>
+                   </button>
+                 )}
                  <button onClick={() => window.open(`/explore`, '_blank')} className="flex items-center space-x-2 px-6 py-3 rounded-full font-bold shadow-lg border border-current hover:bg-black/5 transition-all">
                      <MapIcon size={18} /> <span>ดูบนแผนที่</span>
                  </button>
@@ -216,6 +233,25 @@ export const ProfilePage: React.FC = () => {
               <a href="/" className="font-bold hover:underline">เริ่มใช้งาน Zeelink</a>
           </div>
        </div>
+
+       {/* Modal รับบริจาค PromptPay */}
+       <Modal open={supportOpen} onClose={() => setSupportOpen(false)} title={`💛 สนับสนุน ${profile.displayName}`}>
+         <div className="p-5 flex flex-col items-center text-center space-y-4" style={{ color: theme.textColor }}>
+           <p className="text-sm opacity-80">สแกน QR ด้วยแอปธนาคารเพื่อสนับสนุนผลงาน</p>
+           {promptpayQr && (
+             <img src={promptpayQr} alt="PromptPay QR" className="w-56 h-56 rounded-xl bg-white p-2" />
+           )}
+           <div className="w-full flex items-center gap-2 p-2 rounded-lg" style={{ background: 'rgba(127,127,127,0.15)' }}>
+             <span className="text-sm font-mono flex-1 text-left truncate">{promptpay}</span>
+             <button
+               onClick={() => navigator.clipboard.writeText(promptpay)}
+               className="px-3 py-1.5 rounded-lg text-xs font-bold text-white"
+               style={{ background: palette.orange }}
+             >คัดลอก</button>
+           </div>
+           <p className="text-[11px] opacity-60">ยอดบริจาคเข้าสู่บัญชี PromptPay ของเจ้าของโดยตรง</p>
+         </div>
+       </Modal>
     </div>
   );
 };
