@@ -415,12 +415,15 @@ export const Explore: React.FC = () => {
           <div className="flex justify-between items-center">
              <button
                onClick={() => setMobileSheetOpen(o => !o)}
-               className="flex items-center gap-2 text-lg font-bold transition-colors"
+               className="flex flex-col items-start gap-1 text-lg font-bold transition-colors"
                style={{ color: 'var(--text-primary)' }}
                aria-expanded={mobileSheetOpen}
              >
-               <MapPin className="text-blue-500" size={20} />คนใกล้คุณ
-               <ChevronUp size={16} className={`md:hidden transition-transform ${mobileSheetOpen ? '' : 'rotate-180'}`} />
+               <span className="font-mono text-[10px] tracking-[0.18em] uppercase" style={{ color: 'var(--blueprint)' }}>Nearby · คนใกล้คุณ</span>
+               <span className="flex items-center gap-2">
+                 <MapPin className="text-blue-500" size={20} />คนใกล้คุณ
+                 <ChevronUp size={16} className={`md:hidden transition-transform ${mobileSheetOpen ? '' : 'rotate-180'}`} />
+               </span>
              </button>
              <button onClick={(e) => { e.stopPropagation(); handleManualRefresh(); }} disabled={refreshCooldown > 0} className="p-2 text-[var(--orange)] disabled:text-gray-400 transition-colors" aria-label="รีเฟรชรายชื่อ"><RefreshCw size={18} className={refreshCooldown > 0 ? 'animate-spin' : ''} /></button>
           </div>
