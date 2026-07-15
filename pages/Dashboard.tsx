@@ -381,6 +381,12 @@ export const Dashboard: React.FC = () => {
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
 
           <div className="flex-1 space-y-6">
+              {/* ===== Header ===== */}
+              <div className="mb-2">
+                <p className="font-mono text-[11px] tracking-[0.18em] uppercase mb-1" style={{ color: 'var(--blueprint)' }}>Studio · สตูดิโอพอร์ตโฟลิโอ</p>
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>สร้างโปรไฟล์ของคุณ</h1>
+              </div>
+
               <div className="glass-card p-2 flex space-x-2">
                   <button onClick={() => setActiveTab('profile')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-[var(--orange)] text-white shadow-lg' : 'hover:bg-white/10'}`}> <User size={18} className="inline mr-2" /> ข้อมูลทั่วไป </button>
                   <button onClick={() => setActiveTab('design')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'design' ? 'bg-[var(--pink)] text-white shadow-lg' : 'hover:bg-white/10'}`}> <Palette size={18} className="inline mr-2" /> ตกแต่ง & ลิงก์ </button>
@@ -601,7 +607,10 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="w-full lg:w-[400px] flex flex-col items-center">
-              <h2 className="text-lg font-bold mb-4 flex items-center"><Smartphone size={20} className="mr-2" /> Live Preview</h2>
+              <div className="mb-4 self-start">
+                <p className="font-mono text-[10px] tracking-[0.18em] uppercase mb-1" style={{ color: 'var(--blueprint)' }}>Preview · ตัวอย่างสด</p>
+                <h2 className="text-lg font-bold flex items-center"><Smartphone size={20} className="mr-2" /> Live Preview</h2>
+              </div>
               <div className="sticky top-24"><MobilePreview /></div>
           </div>
         </div>
