@@ -35,6 +35,7 @@ export const Vote: React.FC = () => {
           {/* LEFT COLUMN: Green Glass */}
           <div className="space-y-10">
             <div className="glass-card p-8 border-green">
+               <p className="font-mono text-[10px] tracking-[0.18em] uppercase mb-2" style={{ color: 'var(--blueprint)' }}>Ask · ถามคำถาม</p>
                <h3 className="text-sm font-bold uppercase mb-4 flex items-center text-green-500"><MessageSquare size={16} className="mr-2"/> ถามคำถามใหม่</h3>
                <form onSubmit={handleSend} className="space-y-4">
                   <textarea value={newText} onChange={(e) => setNewText(e.target.value)} maxLength={300} placeholder="คุณกำลังคิดอะไรอยู่?" className="w-full p-4 rounded-xl outline-none focus:ring-1 focus:ring-green-500 resize-none h-32" />
@@ -47,7 +48,10 @@ export const Vote: React.FC = () => {
 
             <div className="space-y-4">
                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold">คำถามทั้งหมด</h2>
+                  <div>
+                    <p className="font-mono text-[10px] tracking-[0.18em] uppercase mb-1" style={{ color: 'var(--blueprint)' }}>All · คำถามทั้งหมด</p>
+                    <h2 className="text-xl font-bold">คำถามทั้งหมด</h2>
+                  </div>
                   <div className="relative w-48">
                     <input type="text" placeholder="ค้นหา..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-8 pr-4 py-2 text-xs rounded-full" />
                     <Search className="absolute left-2.5 top-2.5 text-gray-400" size={14} />
@@ -72,9 +76,12 @@ export const Vote: React.FC = () => {
 
           {/* RIGHT COLUMN: Purple Glass Top 5 */}
           <div className="glass-card p-6 border-[var(--pink)] h-fit">
-             <div className="flex items-center space-x-2 mb-6">
-                <Award className="text-yellow-400" size={24} />
-                <h2 className="text-2xl font-bold">TOP 5 ประจำวัน</h2>
+             <div className="mb-6">
+                <p className="font-mono text-[10px] tracking-[0.18em] uppercase mb-1" style={{ color: 'var(--blueprint)' }}>Top 5 · โหวตประจำวัน</p>
+                <div className="flex items-center space-x-2">
+                  <Award className="text-yellow-400" size={24} />
+                  <h2 className="text-2xl font-bold">TOP 5 ประจำวัน</h2>
+                </div>
              </div>
              <div className="space-y-6">
                 {top5.map((q, idx) => {
