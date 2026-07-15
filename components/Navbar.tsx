@@ -8,7 +8,7 @@ import {
 import { Logo } from './Logo';
 import { fonts, palette } from '../lib/designTokens';
 
-// ===== รายการนำทางหลัก (แถบบนเหมือน Facebook) =====
+// ===== รายการนำทางหลัก =====
 interface NavItem {
   to: string;
   label: string;
@@ -23,6 +23,8 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const HEADER_H = '60px';
+const fallbackAvatar = (name: string) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'Z')}&background=FF7A2F&color=fff&bold=true`;
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -43,7 +45,7 @@ export const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  // ปิดเมนู/ลิ้นชักเมื่อคลิกข้างนอก (มือถือ + เดสก์ท็อป)
+  // ปิดเมนู/ลิ้นชักเมื่อคลิกข้างนอก
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
@@ -53,7 +55,26 @@ export const Navbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  // ล็อกการเลื่อน body เมื่อลิ้นชักเปิด (กันฉากหลังเลื่อนตาม)
+  // ปิดลิ้นชักเมื่อกด Esc
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setDrawerOpen(false); setMenuOpen(false); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  // ปิดลิ้นชัก/เมนูเมื่อเปลี่ยนหน้า
+  useEffect(() => { setDrawerOpen(false); setMenuOpen(false); }, [location.pathname]);
+
+  // ปิดลิ้นชักเมื่อย่อขนาดเป็นเดสก์ท็อป (กัน body ล็อก overflow ค้าง)
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth >= 768) setDrawerOpen(false); };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // ล็อกการเลื่อน body เมื่อลิ้นชักเปิด
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -75,7 +96,7 @@ export const Navbar: React.FC = () => {
         background: 'var(--glass-bg)',
         borderBottom: '1px solid var(--glass-border)',
         backdropFilter: 'blur(14px)',
-        boxShadow: '0 1px 0 var(--orange-soft)',
+        boxShadow: '0 1px 0 var(--orange-soft), 0 6px 18px -16px rgba(31,27,22,0.5)',
       }}
     >
       {/* ===== โลโก้ ===== */}
@@ -87,9 +108,9 @@ export const Navbar: React.FC = () => {
       <button
         data-drawer-toggle
         onClick={() => setDrawerOpen(o => !o)}
-        aria-label="เปิดเมนู"
+        aria-label={drawerOpen ? 'ปิดเมนู' : 'เปิดเมนู'}
         aria-expanded={drawerOpen}
-        className="md:hidden p-2 -ml-1 rounded-lg transition-colors"
+        className="md:hidden p-2 -ml-1 rounded-lg transition-colors hover:bg-white/10"
         style={{ color: 'var(--text-secondary)' }}
       >
         {drawerOpen ? <X size={24} /> : <Menu size={24} />}
@@ -104,14 +125,14 @@ export const Navbar: React.FC = () => {
             onChange={e => setQuery(e.target.value)}
             placeholder="ค้นหาโพสต์ เพื่อน หรือครีเอเตอร์..."
             aria-label="ค้นหา"
-            className="w-full pl-9 pr-3 py-2 rounded-full text-sm outline-none"
+            className="w-full pl-9 pr-3 py-2 rounded-full text-sm outline-none transition-shadow"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', fontFamily: fonts.body }}
           />
         </div>
       </form>
 
-      {/* ===== ไอคอนนำทาง (เหมือนแถบบน Facebook) ===== */}
-      <nav className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+      {/* ===== ไอคอนนำทาง (เดสก์ท็อปเท่านั้น — มือถือใช้ลิ้นชัก) ===== */}
+      <nav className="hidden md:flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
         {NAV_ITEMS.map(item => {
           const Icon = item.icon;
           const active = isActive(item.to);
@@ -127,27 +148,16 @@ export const Navbar: React.FC = () => {
                 background: active ? palette.orangeSoft : 'transparent',
               }}
             >
-              <Icon size={22} className="flex-shrink-0" />
-              <span className="hidden lg:inline text-sm font-semibold" style={{ fontFamily: fonts.body }}>{item.label}</span>
-              {active && <span className="hidden lg:block absolute -bottom-[9px] left-2 right-2 h-[2.5px] rounded-full" style={{ background: palette.orange }} />}
+              <Icon size={20} className="flex-shrink-0" />
+              <span className="text-sm font-semibold" style={{ fontFamily: fonts.body }}>{item.label}</span>
             </Link>
           );
         })}
 
-        {/* ค้นหาแบบย่อ (มือถือ) → ไปหน้าฟีดที่มีช่องค้นหา */}
-        <button
-          onClick={() => navigate('/feed')}
-          aria-label="ค้นหา"
-          className="md:hidden p-2 rounded-lg transition-colors"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <Search size={22} />
-        </button>
-
         {/* สลับธีม */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg transition-colors"
+          className="ml-1 p-2 rounded-lg transition-colors hover:bg-white/10"
           style={{ color: 'var(--text-primary)', background: 'var(--glass-border)' }}
           aria-label="สลับธีม"
         >
@@ -156,19 +166,26 @@ export const Navbar: React.FC = () => {
 
         {/* ===== ผู้ใช้: อวตาร + เมนู ===== */}
         {user ? (
-          <div className="relative" ref={menuRef}>
+          <div className="relative ml-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(o => !o)}
               aria-label="เมนูผู้ใช้"
-              className="ml-1 rounded-full p-0.5 transition-transform hover:scale-105"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="rounded-full p-0.5 transition-transform hover:scale-105"
               style={{ border: `2px solid ${menuOpen ? palette.orange : 'var(--glass-border)'}` }}
             >
-              <img src={user.photoUrl} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+              <img
+                src={user.photoUrl}
+                alt={user.name}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallbackAvatar(user.name); }}
+                className="w-8 h-8 rounded-full object-cover bg-white"
+              />
             </button>
 
             {menuOpen && (
               <div
-                className="absolute right-0 top-11 w-56 rounded-2xl shadow-2xl p-2 z-50 animate-fade-in"
+                className="absolute right-0 top-11 w-60 rounded-2xl shadow-2xl p-2 z-50 animate-fade-in"
                 style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
                 role="menu"
               >
@@ -179,7 +196,12 @@ export const Navbar: React.FC = () => {
                   style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}
                   role="menuitem"
                 >
-                  <img src={user.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+                  <img
+                    src={user.photoUrl}
+                    alt=""
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallbackAvatar(user.name); }}
+                    className="w-9 h-9 rounded-full object-cover bg-white"
+                  />
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{user.name}</p>
                     <p className="text-[11px] opacity-60 truncate">@{profileUsername(user.email)}</p>
@@ -219,12 +241,12 @@ export const Navbar: React.FC = () => {
           {/* แผงเลื่อนจากขวา */}
           <div
             ref={drawerRef}
-            className="absolute top-0 right-0 h-full w-[82%] max-w-xs shadow-2xl flex flex-col animate-slide-in-right"
+            className="absolute top-0 right-0 h-full w-[84%] max-w-xs shadow-2xl flex flex-col animate-slide-in-right"
             style={{ background: 'var(--glass-bg)', borderLeft: '1px solid var(--glass-border)' }}
           >
             <div className="flex items-center justify-between px-4 h-[60px] border-b" style={{ borderColor: 'var(--glass-border)' }}>
-              <span className="text-lg font-bold" style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}>เมนู</span>
-              <button onClick={() => setDrawerOpen(false)} aria-label="ปิดเมนู" className="p-2 rounded-lg" style={{ color: 'var(--text-secondary)' }}>
+              <span className="text-[11px] font-mono tracking-[0.18em] uppercase" style={{ color: 'var(--blueprint)' }}>Menu</span>
+              <button onClick={() => setDrawerOpen(false)} aria-label="ปิดเมนู" className="p-2 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-secondary)' }}>
                 <X size={22} />
               </button>
             </div>
@@ -285,6 +307,7 @@ export const Navbar: React.FC = () => {
                   เข้าสู่ระบบ
                 </Link>
               )}
+              <p className="text-center text-[10px] font-mono tracking-wider pt-3 opacity-50">ZELINK · พอร์ตโฟลิโอคนไทย</p>
             </div>
           </div>
         </div>
