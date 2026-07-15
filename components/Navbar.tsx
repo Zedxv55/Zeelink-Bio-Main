@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  Home, Map, Vote, User, Search, Sun, Moon, LogOut, LayoutDashboard, Menu, X,
+  Home, Map, Vote, User, Search, Sun, Moon, LogOut, LayoutDashboard, Menu, X, Shield,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { fonts, palette } from '../lib/designTokens';
@@ -154,6 +154,20 @@ export const Navbar: React.FC = () => {
           );
         })}
 
+        {/* แอดมิน (เฉพาะสิทธิ์ admin) */}
+        {user?.role === 'admin' && (
+          <Link
+            to="/admin"
+            aria-label="แผงแอดมิน"
+            aria-current={isActive('/admin') ? 'page' : undefined}
+            className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors"
+            style={{ color: isActive('/admin') ? palette.orange : 'var(--text-secondary)', background: isActive('/admin') ? palette.orangeSoft : 'transparent' }}
+          >
+            <Shield size={20} className="flex-shrink-0" />
+            <span className="text-sm font-semibold" style={{ fontFamily: fonts.body }}>แอดมิน</span>
+          </Link>
+        )}
+
         {/* สลับธีม */}
         <button
           onClick={toggleTheme}
@@ -289,6 +303,19 @@ export const Navbar: React.FC = () => {
                   </Link>
                 );
               })}
+
+              {user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  onClick={() => setDrawerOpen(false)}
+                  aria-current={isActive('/admin') ? 'page' : undefined}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-colors"
+                  style={{ color: isActive('/admin') ? palette.orange : 'var(--text-primary)', background: isActive('/admin') ? palette.orangeSoft : 'transparent', fontFamily: fonts.body }}
+                >
+                  <Shield size={22} className="flex-shrink-0" />
+                  แอดมิน
+                </Link>
+              )}
             </nav>
 
             {/* บัญชีผู้ใช้ (มือถือ) */}

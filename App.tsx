@@ -24,6 +24,14 @@ const PageLoader: React.FC = () => (
   </div>
 );
 
+// กั้นหน้าแอดมิน: ต้องล็อกอิน + สิทธิ์ admin เท่านั้น (non-admin เด้งไป /feed)
+const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/feed" replace />;
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
   const { user, activePopup, closeActivePopup } = useAuth();
   const location = useLocation();
@@ -71,7 +79,7 @@ const App: React.FC = () => {
               {/* หน้าแรก = หน้าล็อกอินเสมอ (มีฟีดเบลอข้างหลัง) */}
               <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/admin" element={<RequireAuth><AdminPanel /></RequireAuth>} />
+              <Route path="/admin" element={<RequireAdmin><AdminPanel /></RequireAdmin>} />
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/feed" element={<RequireAuth><Feed /></RequireAuth>} />
               <Route path="/explore" element={<RequireAuth><Explore /></RequireAuth>} />

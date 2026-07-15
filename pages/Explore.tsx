@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { THAI_REGIONS } from '../constants';
 import { Profile } from '../types';
-import { Search, MapPin, Heart, RefreshCw, X, ChevronLeft, ChevronRight, Shield, LocateFixed, Navigation } from 'lucide-react';
+import { Search, MapPin, Heart, RefreshCw, X, ChevronLeft, ChevronRight, ChevronUp, Shield, LocateFixed, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import { Logo } from '../components/Logo';
@@ -79,6 +79,8 @@ export const Explore: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showIntro, setShowIntro] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // มือถือ: แผงรายชื่อเริ่มแบบ peek (เห็นแค่หัวแถบ) แตะเพื่อขยาย — กันบังแผนที่
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(true);
   const [userProvince, setUserProvince] = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -383,39 +385,50 @@ export const Explore: React.FC = () => {
         </div>
       )}
 
-      {/* ปุ่มสลับแผงรายชื่อ — มือถืออยู่ล่างขวา 桌面อยู่ซ้าย */}
+      {/* ปุ่มสลับแผงรายชื่อ (เดสก์ท็อป — มือถือใช้แถบหัวบนแผ่นแทน) */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         aria-label={sidebarOpen ? 'ปิดรายชื่อ' : 'เปิดรายชื่อ'}
-        className="fixed bottom-4 right-4 z-40 md:top-20 md:bottom-auto md:left-[88px] lg:left-[256px] md:right-auto w-14 h-14 rounded-full bg-[var(--orange)] text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+        className="hidden md:flex fixed top-20 left-[88px] lg:left-[256px] z-40 w-11 h-16 rounded-r-xl bg-white dark:bg-gray-800 border border-l-0 shadow-md items-center justify-center text-[var(--text-secondary)] hover:text-[var(--orange)] transition-colors"
       >
-        {sidebarOpen ? <ChevronLeft size={24} /> : <MapPin size={24} />}
+        {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
       </button>
 
-      {/* Sidebar List — มือถือเป็น bottom sheet / เดสก์ท็อปเป็นแผงซ้าย */}
+      {/* Sidebar List — มือถือเป็น bottom sheet (peek เริ่มต้น) / เดสก์ท็อปเป็นแผงซ้าย */}
       <div className={`glass-card fixed z-30 flex flex-col border-[var(--orange)]
-        left-0 right-0 bottom-0 top-auto w-full max-w-none rounded-t-2xl max-h-[78vh]
+        left-0 right-0 bottom-0 top-auto w-full max-w-none rounded-t-2xl max-h-[82vh]
         md:left-[88px] lg:left-[256px] md:top-20 md:bottom-2 md:right-auto md:w-80 md:max-w-sm md:rounded-none md:max-h-none
         transition-transform duration-300
-        ${sidebarOpen ? 'translate-y-0 md:translate-x-0' : '-translate-y-[110%] md:translate-y-0 md:-translate-x-[110%]'}
+        ${mobileSheetOpen ? 'max-md:translate-y-0' : 'max-md:translate-y-[calc(100%-84px)]'}
+        ${sidebarOpen ? 'md:translate-x-0' : 'md:-translate-x-[110%]'}
         ${isDemo ? 'pointer-events-none blur-sm opacity-70' : ''}`}>
 
-        {/* จุดจับบนแผ่น (มือถือเท่านั้น) */}
-        <div className="md:hidden flex justify-center pt-2 pb-1">
-          <span className="w-10 h-1.5 rounded-full" style={{ background: 'var(--glass-border)' }} />
+        {/* แถบจับ (มือถือ) — แตะเพื่อขยาย/ยุบ */}
+        <div className="md:hidden" onClick={() => setMobileSheetOpen(o => !o)} role="button" aria-label="เปิด/ปิดรายชื่อ" tabIndex={0}
+             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMobileSheetOpen(o => !o); } }}>
+          <div className="flex justify-center pt-2 pb-1">
+            <span className="w-10 h-1.5 rounded-full" style={{ background: 'var(--glass-border)' }} />
+          </div>
         </div>
-
 
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-center">
-             <h1 className="text-lg font-bold flex items-center"><MapPin className="mr-2 text-blue-500" size={20} />คนใกล้คุณ</h1>
-             <button onClick={handleManualRefresh} disabled={refreshCooldown > 0} className="p-2 text-[var(--orange)] disabled:text-gray-400 transition-colors"><RefreshCw size={18} className={refreshCooldown > 0 ? 'animate-spin' : ''} /></button>
+             <button
+               onClick={() => setMobileSheetOpen(o => !o)}
+               className="flex items-center gap-2 text-lg font-bold transition-colors"
+               style={{ color: 'var(--text-primary)' }}
+               aria-expanded={mobileSheetOpen}
+             >
+               <MapPin className="text-blue-500" size={20} />คนใกล้คุณ
+               <ChevronUp size={16} className={`md:hidden transition-transform ${mobileSheetOpen ? '' : 'rotate-180'}`} />
+             </button>
+             <button onClick={(e) => { e.stopPropagation(); handleManualRefresh(); }} disabled={refreshCooldown > 0} className="p-2 text-[var(--orange)] disabled:text-gray-400 transition-colors" aria-label="รีเฟรชรายชื่อ"><RefreshCw size={18} className={refreshCooldown > 0 ? 'animate-spin' : ''} /></button>
           </div>
           {refreshCooldown > 0 && <p className="text-[10px] text-gray-500 text-right">รีเฟรชได้ใน {refreshCooldown}s</p>}
 
           <div className="flex space-x-2">
-              <button onClick={filterBySameProvince} className="flex-1 py-1.5 text-xs font-bold bg-[var(--orange)] text-white rounded-lg">📍 จังหวัดเดียวกัน</button>
-              <button onClick={filterBySameDistrict} className="flex-1 py-1.5 text-xs font-bold bg-gray-500/20 text-gray-500 rounded-lg">อำเภอเดียวกัน</button>
+              <button onClick={() => filterBySameProvince()} className="flex-1 py-1.5 text-xs font-bold bg-[var(--orange)] text-white rounded-lg">📍 จังหวัดเดียวกัน</button>
+              <button onClick={() => filterBySameDistrict()} className="flex-1 py-1.5 text-xs font-bold bg-gray-500/20 text-gray-500 rounded-lg">อำเภอเดียวกัน</button>
           </div>
 
           <div className="relative">
