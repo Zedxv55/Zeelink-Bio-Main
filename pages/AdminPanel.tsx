@@ -138,7 +138,10 @@ export const AdminPanel: React.FC = () => {
       <div className="min-h-screen pt-24 px-4 pb-20">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
-            <h1 className="text-3xl font-bold flex items-center"><ShieldCheck className="mr-3 text-[var(--orange)]" size={32} />Admin Control</h1>
+            <div className="mb-1">
+              <p className="font-mono text-[11px] tracking-[0.18em] uppercase mb-1" style={{ color: 'var(--blueprint)' }}>Admin · แผงควบคุม</p>
+              <h1 className="text-3xl font-bold flex items-center"><ShieldCheck className="mr-3 text-[var(--orange)]" size={32} />Admin Control</h1>
+            </div>
             <div className="glass-card p-1 flex space-x-2">
               <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-[var(--orange)] text-white' : 'hover:bg-white/10'}`}>Users</button>
               <button onClick={() => setActiveTab('popups')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'popups' ? 'bg-[var(--pink)] text-white' : 'hover:bg-white/10'}`}>Popups</button>
