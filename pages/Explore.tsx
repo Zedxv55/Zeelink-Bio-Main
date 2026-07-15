@@ -383,16 +383,28 @@ export const Explore: React.FC = () => {
         </div>
       )}
 
-      {/* Always-visible sidebar toggle (works on mobile too) */}
+      {/* ปุ่มสลับแผงรายชื่อ — มือถืออยู่ล่างขวา 桌面อยู่ซ้าย */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed top-20 left-2 md:left-[88px] lg:left-[256px] z-40 w-8 h-16 bg-white dark:bg-gray-800 border rounded-r-xl flex items-center justify-center shadow-md"
+        aria-label={sidebarOpen ? 'ปิดรายชื่อ' : 'เปิดรายชื่อ'}
+        className="fixed bottom-4 right-4 z-40 md:top-20 md:bottom-auto md:left-[88px] lg:left-[256px] md:right-auto w-14 h-14 rounded-full bg-[var(--orange)] text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
       >
-        {sidebarOpen ? <ChevronLeft size={20} className="text-gray-500"/> : <ChevronRight size={20} className="text-gray-500"/>}
+        {sidebarOpen ? <ChevronLeft size={24} /> : <MapPin size={24} />}
       </button>
 
-      {/* Sidebar List (Smart Glass Sidebar) */}
-      <div className={`glass-card fixed left-2 md:left-[88px] lg:left-[256px] top-20 bottom-2 z-30 w-[85vw] max-w-sm md:w-80 transition-transform duration-300 flex flex-col border-[var(--orange)] ${sidebarOpen ? 'translate-x-0' : '-translate-x-[110%]'} ${isDemo ? 'pointer-events-none blur-sm opacity-70' : ''}`}>
+      {/* Sidebar List — มือถือเป็น bottom sheet / เดสก์ท็อปเป็นแผงซ้าย */}
+      <div className={`glass-card fixed z-30 flex flex-col border-[var(--orange)]
+        left-0 right-0 bottom-0 top-auto w-full max-w-none rounded-t-2xl max-h-[78vh]
+        md:left-[88px] lg:left-[256px] md:top-20 md:bottom-2 md:right-auto md:w-80 md:max-w-sm md:rounded-none md:max-h-none
+        transition-transform duration-300
+        ${sidebarOpen ? 'translate-y-0 md:translate-x-0' : '-translate-y-[110%] md:translate-y-0 md:-translate-x-[110%]'}
+        ${isDemo ? 'pointer-events-none blur-sm opacity-70' : ''}`}>
+
+        {/* จุดจับบนแผ่น (มือถือเท่านั้น) */}
+        <div className="md:hidden flex justify-center pt-2 pb-1">
+          <span className="w-10 h-1.5 rounded-full" style={{ background: 'var(--glass-border)' }} />
+        </div>
+
 
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-center">

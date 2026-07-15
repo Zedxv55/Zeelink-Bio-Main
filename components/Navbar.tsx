@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  Home, Map, Vote, User, Search, Sun, Moon, LogOut, LayoutDashboard,
+  Home, Map, Vote, User, Search, Sun, Moon, LogOut, LayoutDashboard, Menu, X,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { fonts, palette } from '../lib/designTokens';
@@ -32,22 +32,32 @@ export const Navbar: React.FC = () => {
 
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     setMenuOpen(false);
+    setDrawerOpen(false);
     await logout();
     navigate('/login');
   };
 
-  // ปิดเมนูอวตารเมื่อคลิกข้างนอก
+  // ปิดเมนู/ลิ้นชักเมื่อคลิกข้างนอก (มือถือ + เดสก์ท็อป)
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+      if (drawerRef.current && !drawerRef.current.contains(e.target as Node) && !(e.target as HTMLElement).closest('[data-drawer-toggle]')) setDrawerOpen(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
+
+  // ล็อกการเลื่อน body เมื่อลิ้นชักเปิด (กันฉากหลังเลื่อนตาม)
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [drawerOpen]);
 
   const isActive = (to: string): boolean => location.pathname.startsWith(to);
 
@@ -72,6 +82,18 @@ export const Navbar: React.FC = () => {
       <Link to={user ? '/feed' : '/login'} className="flex items-center flex-shrink-0" aria-label="Zeelink หน้าแรก">
         <Logo size={30} variant={theme === 'dark' ? 'light' : 'dark'} withWordmark />
       </Link>
+
+      {/* ===== ปุ่มเมนู (มือถือเท่านั้น) ===== */}
+      <button
+        data-drawer-toggle
+        onClick={() => setDrawerOpen(o => !o)}
+        aria-label="เปิดเมนู"
+        aria-expanded={drawerOpen}
+        className="md:hidden p-2 -ml-1 rounded-lg transition-colors"
+        style={{ color: 'var(--text-secondary)' }}
+      >
+        {drawerOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
 
       {/* ===== ช่องค้นหา (เดสก์ท็อป) ===== */}
       <form onSubmit={submitSearch} className="hidden md:flex items-center flex-1 max-w-md mx-2">
@@ -184,6 +206,89 @@ export const Navbar: React.FC = () => {
           </Link>
         )}
       </nav>
+
+      {/* ===== ลิ้นชักเมนู (มือถือ) ===== */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true" aria-label="เมนูนำทาง">
+          {/* ฉากหลังทึบแสง คลิกปิด */}
+          <button
+            aria-label="ปิดเมนู"
+            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+          />
+          {/* แผงเลื่อนจากขวา */}
+          <div
+            ref={drawerRef}
+            className="absolute top-0 right-0 h-full w-[82%] max-w-xs shadow-2xl flex flex-col animate-slide-in-right"
+            style={{ background: 'var(--glass-bg)', borderLeft: '1px solid var(--glass-border)' }}
+          >
+            <div className="flex items-center justify-between px-4 h-[60px] border-b" style={{ borderColor: 'var(--glass-border)' }}>
+              <span className="text-lg font-bold" style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}>เมนู</span>
+              <button onClick={() => setDrawerOpen(false)} aria-label="ปิดเมนู" className="p-2 rounded-lg" style={{ color: 'var(--text-secondary)' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* ค้นหาในลิ้นชัก (มือถือ) */}
+            <form onSubmit={submitSearch} className="p-4 border-b" style={{ borderColor: 'var(--glass-border)' }}>
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="ค้นหาโพสต์ เพื่อน หรือครีเอเตอร์..."
+                  aria-label="ค้นหา"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-full text-sm outline-none"
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', fontFamily: fonts.body }}
+                />
+              </div>
+            </form>
+
+            {/* รายการนำทาง */}
+            <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+              {NAV_ITEMS.map(item => {
+                const Icon = item.icon;
+                const active = isActive(item.to);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setDrawerOpen(false)}
+                    aria-current={active ? 'page' : undefined}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-colors"
+                    style={{
+                      color: active ? palette.orange : 'var(--text-primary)',
+                      background: active ? palette.orangeSoft : 'transparent',
+                      fontFamily: fonts.body,
+                    }}
+                  >
+                    <Icon size={22} className="flex-shrink-0" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* บัญชีผู้ใช้ (มือถือ) */}
+            <div className="p-3 border-t" style={{ borderColor: 'var(--glass-border)' }}>
+              {user ? (
+                <div className="space-y-1">
+                  <Link to="/dashboard" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }} role="menuitem">
+                    <LayoutDashboard size={20} /> โปรไฟล์ของฉัน
+                  </Link>
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: palette.pink }} role="menuitem">
+                    <LogOut size={20} /> ออกจากระบบ
+                  </button>
+                </div>
+              ) : (
+                <Link to="/login" onClick={() => setDrawerOpen(false)} className="flex items-center justify-center px-4 py-3 rounded-full text-sm font-bold text-white transition-transform hover:scale-105" style={{ background: palette.orange, fontFamily: fonts.body }}>
+                  เข้าสู่ระบบ
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

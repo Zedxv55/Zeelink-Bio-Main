@@ -31,7 +31,7 @@ function aiDevPlugin(env: Record<string, string>) {
               return res.end(JSON.stringify({ error: 'ข้อความยาวเกินไป (สูงสุด 2000 ตัวอักษร)' }));
             }
             const apiKey = env.GEMINI_API_KEY;
-            const apiUrl = env.AI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+            const apiUrl = env.AI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
             if (!apiKey) {
               return res.end(JSON.stringify({ reply: 'ขออภัยครับ ระบบ AI ยังไม่พร้อม (ไม่พบ GEMINI_API_KEY ในฝั่ง server)' }));
             }

@@ -160,6 +160,18 @@ export interface Post {
   createdAt: string;
 }
 
+// ===== การแจ้งเตือนแบบเรียลไทม์ (P2-1) =====
+export type NotificationType = 'post' | 'like' | 'comment' | 'follow' | 'system';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  text: string;
+  fromUser?: string | null;
+  createdAt: string;
+  read: boolean;
+}
+
 // ===== AI config (แอดมินคุม AI ต่อคน / ฟีด) =====
 export interface AiConfig {
   id: string;

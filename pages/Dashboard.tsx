@@ -453,15 +453,15 @@ export const Dashboard: React.FC = () => {
 
                       <div className="glass-card p-6 space-y-4 border-green">
                           <h3 className="font-bold flex items-center"><MapPin className="mr-2 text-green-500"/> ที่อยู่ (สำหรับแสดงผล Online)</h3>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <select value={region} onChange={e => setRegion(e.target.value)} className="w-full p-3 rounded-lg"><option value="">เลือกภูมิภาค</option>{THAI_REGIONS.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}</select>
                             <select value={province} onChange={e => setProvince(e.target.value)} disabled={!region} className="w-full p-3 rounded-lg"><option value="">เลือกจังหวัด</option>{selectedRegionData?.provinces.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <input value={district} onChange={e => setDistrict(e.target.value)} placeholder="อำเภอ (พิมพ์เอง)" className="w-full p-3 rounded-lg" />
                               <input value={subDistrict} onChange={e => setSubDistrict(e.target.value)} placeholder="ตำบล (พิมพ์เอง)" className="w-full p-3 rounded-lg" />
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <input value={postalCode} readOnly placeholder="รหัสไปรษณีย์ (ออโต้)" className="w-full p-3 rounded-lg opacity-70" />
                               <input value={lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : ''} readOnly placeholder="พิกัด (แชร์ตำแหน่ง)" className="w-full p-3 rounded-lg opacity-70" />
                           </div>
@@ -535,14 +535,16 @@ export const Dashboard: React.FC = () => {
                                 const Icon = platform.icon;
                                 const urlValid = !link.url || isValidUrl(link.url);
                                 return (
-                                  <div key={link.id} className="flex items-center space-x-2 p-2 bg-black/10 rounded-lg border border-white/10">
+                                  <div key={link.id} className="flex items-center gap-2 p-2 bg-black/10 rounded-lg border border-white/10">
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${urlValid ? 'bg-[var(--pink)]/20 text-[var(--pink)]' : 'bg-red-500/20 text-red-400'}`}>
                                       <Icon size={16} />
                                     </div>
-                                    <input value={link.title} onChange={(e) => handleLinkChange(link.id, 'title', e.target.value)} className="flex-1 p-1 bg-transparent border-b text-sm font-bold" placeholder={platform.label} />
-                                    <input value={link.url} onChange={(e) => handleLinkChange(link.id, 'url', e.target.value)} className={`flex-1 p-1 bg-transparent border-b text-xs ${urlValid ? 'text-muted' : 'text-red-400'}`} placeholder="https://..." />
-                                    {!urlValid && <span className="text-[10px] text-red-400">URL ไม่ถูกต้อง</span>}
-                                    <button onClick={() => handleRemoveLink(link.id)} className="text-red-500"><Trash2 size={16}/></button>
+                                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-1 sm:gap-2">
+                                      <input value={link.title} onChange={(e) => handleLinkChange(link.id, 'title', e.target.value)} className="w-full sm:flex-1 min-w-0 p-1 bg-transparent border-b text-sm font-bold" placeholder={platform.label} />
+                                      <input value={link.url} onChange={(e) => handleLinkChange(link.id, 'url', e.target.value)} className={`w-full sm:flex-1 min-w-0 p-1 bg-transparent border-b text-xs ${urlValid ? 'text-muted' : 'text-red-400'}`} placeholder="https://..." />
+                                    </div>
+                                    {!urlValid && <span className="text-[10px] text-red-400 shrink-0 hidden sm:inline">URL ไม่ถูกต้อง</span>}
+                                    <button onClick={() => handleRemoveLink(link.id)} aria-label="ลบลิงก์" className="text-red-500 shrink-0 p-1"><Trash2 size={16}/></button>
                                   </div>
                                 );
                               })}

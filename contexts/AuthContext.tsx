@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role, AdminUserView, OnlineUser, AiConfig } from '../types';
+import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment, Role, AdminUserView, OnlineUser, AiConfig, AppNotification, NotificationType, PostMediaType } from '../types';
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { rankPosts } from '../lib/ranking';
@@ -128,6 +128,22 @@ const mapAiConfig = (c: any): AiConfig => ({
   persona: c.persona || '',
   enabled: c.enabled,
   updatedAt: c.updated_at
+});
+
+// แปลงแถว posts ดิบ (จาก DB / realtime) → Post (ใช้ทั้ง loadPosts และ subscription)
+const mapRawPost = (p: any, userId?: string | null): Post => ({
+  id: p.id,
+  userId: p.user_id,
+  username: p.username,
+  displayName: p.display_name,
+  photoUrl: p.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.display_name || p.username)}&background=random`,
+  text: p.text,
+  mediaUrl: p.media_url,
+  mediaType: (p.media_type || 'none') as PostMediaType,
+  likes: p.likes || 0,
+  likedByMe: userId ? (p.liked_users || []).includes(userId) : false,
+  comments: [],
+  createdAt: p.created_at,
 });
 
 // สร้างแถวในตาราง public.users + profiles หากยังไม่มี

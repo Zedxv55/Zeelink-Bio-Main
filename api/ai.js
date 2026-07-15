@@ -16,14 +16,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'ข้อความยาวเกินไป (สูงสุด 2000 ตัวอักษร)' });
   }
 
-  const apiKey = process.env.AI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   const apiUrl =
-    process.env.AI_API_URL || 'https://api.groq.com/openai/v1/chat/completions';
+    process.env.AI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
   if (!apiKey) {
     // ไม่มีคีย์ → ตอบกลับแบบสุภาพแทนการพัง
     return res
       .status(200)
-      .json({ reply: 'ขออภัยครับ ระบบ AI ยังไม่พร้อม กรุณาตั้งค่า AI_API_KEY ในฝั่ง server' });
+      .json({ reply: 'ขออภัยครับ ระบบ AI ยังไม่พร้อม กรุณาตั้งค่า GEMINI_API_KEY ในฝั่ง server' });
   }
 
   // ป้องกัน prompt injection เบื้องต้น: ล็อกบทบาทเด็ดขาด ไม่ให้ผู้ใช้สั่งเปลี่ยน
@@ -37,23 +37,19 @@ export default async function handler(req, res) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`${apiUrl}?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: process.env.AI_MODEL || 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [
           {
-            role: 'user',
-            content: `${userName ? `ผู้ใช้ชื่อ ${userName} ถามว่า: ` : ''}${message}`,
+            parts: [
+              { text: `${userName ? `ผู้ใช้ชื่อ ${userName} ถามว่า: ` : ''}${message}` },
+            ],
           },
         ],
-        temperature: 0.7,
-        max_tokens: 300,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
       }),
       signal: controller.signal,
     });
@@ -65,7 +61,8 @@ export default async function handler(req, res) {
         .json({ reply: 'ขออภัยครับ ตอนนี้ AI ติดขัดชั่วคราว ลองถามใหม่ภายหลังนะครับ' });
     }
     const data = await response.json();
-    const reply = data?.choices?.[0]?.message?.content?.trim() || 'ไม่มีคำตอบ';
+    const reply =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'ไม่มีคำตอบ';
     return res.status(200).json({ reply });
   } catch (err) {
     return res

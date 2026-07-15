@@ -158,8 +158,8 @@ export const Feed: React.FC = () => {
                       <button onClick={() => setMediaUrl('')} className="absolute top-2 right-2 bg-black/60 rounded-full p-1 text-white"><X size={14} /></button>
                     </div>
                   )}
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex gap-1">
+                  <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
+                    <div className="flex gap-1 flex-wrap">
                       <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-white/10 disabled:opacity-50" style={{ color: palette.blue }}>
                         <ImageIcon size={16} /> {uploading ? 'กำลังอัปโหลด...' : 'รูป/วิดีโอ'}
                       </button>
