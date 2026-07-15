@@ -4,7 +4,8 @@ import { THAI_REGIONS } from '../constants';
 import { Profile } from '../types';
 import { Search, MapPin, Heart, RefreshCw, X, ChevronLeft, ChevronRight, ChevronUp, Shield, LocateFixed, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import L from 'leaflet';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Logo } from '../components/Logo';
 import { DemoOverlay } from '../components/DemoOverlay';
 import { haversineKm } from '../lib/ranking';
@@ -86,11 +87,17 @@ export const Explore: React.FC = () => {
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
 
-  // Leaflet refs
+  // MapLibre refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<{ [key: string]: L.Marker }>({});
-  const landmarkLayerRef = useRef<L.LayerGroup | null>(null);
+  const mapInstanceRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<{ [key: string]: maplibregl.Marker }>({});
+  // เก็บตำแหน่งหมุดแต่ละโปรไฟล์ให้ marker กับ flyTo ใช้ค่าเดียวกัน (กันจุดสะเทือนสุ่มเพี้ยน)
+  const positionCache = useRef<{ [key: string]: { lat: number; lng: number } }>({});
+  // ปักโน้ตบนแผนที่ (demo เก็บ localStorage; เตรียมโครงสร้างรอ Supabase)
+  const [notePins, setNotePins] = useState<{ id: string; lng: number; lat: number; text: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('zeelink_notepins') || '[]'); } catch { return []; }
+  });
+  const noteMarkersRef = useRef<{ [key: string]: maplibregl.Marker }>({});
 
   const navigate = useNavigate();
 
@@ -173,10 +180,16 @@ export const Explore: React.FC = () => {
       setFilterMode('district');
   };
 
+  // ตำแหน่งหมุดต่อจังหวัด — คำนวณค่าคงที่ (ไม่สุ่มใหม่ทุกครั้ง) ให้ marker กับ flyTo ตรงกัน
+  const jitterFor = (key: string): number => {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 1000;
+    return (h / 1000 - 0.5) * 0.12;
+  };
   const getProfilePosition = (provinceName: string) => {
       for (const region of THAI_REGIONS) {
           const province = region.provinces.find(p => p.name === provinceName);
-          if (province) return { lat: province.lat + (Math.random() - 0.5) * 0.1, lng: province.lng + (Math.random() - 0.5) * 0.1 };
+          if (province) return { lat: province.lat + jitterFor(province.name + 'lat'), lng: province.lng + jitterFor(province.name + 'lng') };
       }
       return center;
   };
@@ -196,7 +209,7 @@ export const Explore: React.FC = () => {
         if (snapped) {
           setUserProvince(snapped.province);
           if (mapInstanceRef.current) {
-            mapInstanceRef.current.flyTo([snapped.lat, snapped.lng], 10, { animate: true });
+            mapInstanceRef.current.flyTo({ center: [snapped.lng, snapped.lat], zoom: 10, essential: true });
           }
         }
         setGeoLoading(false);
@@ -211,147 +224,153 @@ export const Explore: React.FC = () => {
     );
   };
 
+  // ปักโน้ตบนแผนที่ (demo เก็บ localStorage)
+  const handleAddNote = () => {
+    const text = window.prompt('เขียนโน้ตที่จะปักบนแผนที่:');
+    if (!text || !text.trim() || !mapInstanceRef.current) return;
+    const c = mapInstanceRef.current.getCenter();
+    const pin = { id: 'n' + Date.now(), lng: c.lng, lat: c.lat, text: text.trim() };
+    const next = [...notePins, pin];
+    setNotePins(next);
+    try { localStorage.setItem('zeelink_notepins', JSON.stringify(next)); } catch { /* noop */ }
+    addNoteMarker(pin);
+  };
+
   // หมายเหตุ: ไม่ขอตำแหน่งอัตโนมัติแล้ว — จะขอเฉพาะเมื่อผู้ใช้กดปุ่ม "แชร์ตำแหน่ง" เท่านั้น
 
-  const createMarkerIcon = (profile: Profile): Promise<string> => {
-      return new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.src = profile.photoUrl;
-          img.onload = () => {
-              const canvas = document.createElement('canvas');
-              canvas.width = 80;
-              canvas.height = 80;
-              const ctx = canvas.getContext('2d');
-              if (!ctx) { resolve(canvas.toDataURL()); return; }
+  // สร้างหมุดโปรไฟล์แบบ HTML (MapLibre) — ใกล้ผู้ใช้ยิ่งลอยเด่น (proximity)
+  const createUserMarkerEl = (u: Profile): HTMLDivElement => {
+    const el = document.createElement('div');
+    el.style.cssText = 'cursor:pointer;';
+    el.innerHTML = `
+      <div class="zel-marker-inner" style="display:flex;flex-direction:column;align-items:center;transform-origin:bottom center;transition:transform .25s ease, filter .25s ease;">
+        <div style="width:46px;height:46px;border-radius:50%;overflow:hidden;border:3px solid ${u.showOnExplore ? '#FF7A2F' : '#9aa0a6'};box-shadow:0 4px 12px rgba(0,0,0,.4);background:#fff;">
+          <img src="${u.photoUrl}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+        </div>
+        <div style="width:3px;height:14px;background:${u.showOnExplore ? '#FF7A2F' : '#9aa0a6'};border-radius:2px;"></div>
+      </div>`;
+    return el;
+  };
 
-              // Draw ring
-              ctx.beginPath();
-              ctx.arc(40, 40, 38, 0, 2 * Math.PI);
-              ctx.fillStyle = '#ffffff';
-              ctx.fill();
-              ctx.lineWidth = 4;
-              ctx.strokeStyle = profile.showOnExplore ? '#FF7A2F' : '#999999';
-              ctx.stroke();
+  // คำนวณสเกลตามระยะห่าง (ใกล้ขึ้น = ใหญ่ขึ้น/ลอยขึ้น)
+  const proximityScale = (provinceName?: string): number => {
+    if (!userProfile?.province || !provinceName) return 1;
+    const me = provinceCenter(userProfile.province);
+    const p = provinceCenter(provinceName);
+    if (!me || !p) return 1;
+    const d = haversineKm(me, p);
+    return Math.max(0.82, Math.min(1.45, 1.4 - d / 2200));
+  };
 
-              // Clip and draw image
-              ctx.save();
-              ctx.beginPath();
-              ctx.arc(40, 40, 34, 0, 2 * Math.PI);
-              ctx.clip();
-              ctx.drawImage(img, 6, 6, 68, 68);
-              ctx.restore();
-
-              resolve(canvas.toDataURL());
-          };
-          img.onerror = () => {
-              const canvas = document.createElement('canvas');
-              canvas.width = 80;
-              canvas.height = 80;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                  ctx.beginPath();
-                  ctx.arc(40, 40, 38, 0, 2 * Math.PI);
-                  ctx.fillStyle = '#cccccc';
-                  ctx.fill();
-              }
-              resolve(canvas.toDataURL());
-          };
-      });
+  // ปักหมุดโน้ตบนแผนที่ (demo เก็บ localStorage)
+  const addNoteMarker = (pin: { id: string; lng: number; lat: number; text: string }) => {
+    if (!mapInstanceRef.current || noteMarkersRef.current[pin.id]) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'cursor:pointer;background:#3D5A80;color:#fff;font-family:IBM Plex Mono,monospace;font-size:11px;padding:5px 9px;border-radius:9px;box-shadow:0 3px 8px rgba(0,0,0,.4);max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    el.textContent = '📝 ' + pin.text;
+    el.title = pin.text;
+    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([pin.lng, pin.lat]).addTo(mapInstanceRef.current);
+    noteMarkersRef.current[pin.id] = marker;
   };
 
   const handleUserClick = (profile: Profile) => {
       setSelectedProfile(profile);
       if (mapInstanceRef.current) {
           const pos = getProfilePosition(profile.province);
-          mapInstanceRef.current.flyTo([pos.lat, pos.lng], 12, { animate: true });
+          positionCache.current[profile.id] = pos;
+          mapInstanceRef.current.flyTo({ center: [pos.lng, pos.lat], zoom: 12, essential: true });
       }
   };
 
-  // Initialize Map with vibrant illustrated styling
+  // Initialize Map with MapLibre GL (OpenFreeMap — ฟรี ไม่ต้องคีย์) + 3D อาคาร
   useEffect(() => {
-      if (!mapContainerRef.current) return;
-      if (mapInstanceRef.current) return;
+      if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-      const initialLat = userProfile?.province ? getProfilePosition(userProfile.province).lat : center.lat;
-      const initialLng = userProfile?.province ? getProfilePosition(userProfile.province).lng : center.lng;
-      const initialZoom = userProfile?.province ? 10 : 6;
-
-      const map = L.map(mapContainerRef.current, {
-          zoomControl: false,
-          attributionControl: false,
-          // Support rotate gesture (pinch/keyboard) where available
-          keyboard: true
-      }).setView([initialLat, initialLng], initialZoom);
-
-      // Vibrant illustrated base: CartoDB Positron (light) with CSS saturation boost
-      // Gives a clean colorful canvas feel for the "Amazing Thailand" look
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          maxZoom: 19,
-          subdomains: 'abcd'
-      }).addTo(map);
-
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-      mapInstanceRef.current = map;
-
-      // Decorative landmark layer (illustrated Thai map feel)
-      const landmarkLayer = L.layerGroup().addTo(map);
-      landmarkLayerRef.current = landmarkLayer;
-      for (const region of THAI_REGIONS) {
-        for (const p of region.provinces) {
-          const emoji = PROVINCE_LANDMARKS[p.name] || '📍';
-          const icon = L.divIcon({
-            className: 'landmark-icon',
-            html: `<div style="font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));">${emoji}</div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14]
-          });
-          L.marker([p.lat, p.lng], { icon, interactive: false, keyboard: false }).addTo(landmarkLayer);
+      const initial = userProfile?.province ? getProfilePosition(userProfile.province) : center;
+      const map = new maplibregl.Map({
+        container: mapContainerRef.current,
+        style: 'https://tiles.openfreemap.org/styles/liberty',
+        center: [initial.lng, initial.lat],
+        zoom: userProfile?.province ? 10 : 6,
+        attributionControl: false,
+        pitch: 45,
+        bearing: -12,
+      });
+      map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+      map.on('load', () => {
+        // 3D building extrusion (OpenFreeMap มี source-layer building)
+        const src = map.getSource('openmaptiles');
+        if (src) {
+          const layers = map.getStyle()?.layers || [];
+          let firstSymbol: string | undefined;
+          for (const l of layers) { if (l.type === 'symbol') { firstSymbol = l.id; break; } }
+          map.addLayer({
+            id: 'zeelink-3d-buildings',
+            source: 'openmaptiles',
+            'source-layer': 'building',
+            type: 'fill-extrusion',
+            minzoom: 13,
+            paint: {
+              'fill-extrusion-color': '#cfc7b6',
+              'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 10],
+              'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+              'fill-extrusion-opacity': 0.9,
+            },
+          }, firstSymbol);
         }
-      }
-
-      return () => {
-          map.remove();
-          mapInstanceRef.current = null;
-          landmarkLayerRef.current = null;
-      };
+        // หมุดสถานที่สำคัญ (emoji) ทั่วไทย
+        for (const region of THAI_REGIONS) {
+          for (const p of region.provinces) {
+            const emoji = PROVINCE_LANDMARKS[p.name] || '📍';
+            const el = document.createElement('div');
+            el.style.fontSize = '22px';
+            el.style.filter = 'drop-shadow(0 2px 3px rgba(0,0,0,.45))';
+            el.textContent = emoji;
+            new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([p.lng, p.lat]).addTo(map);
+          }
+        }
+        // หมุดโน้ตที่เคยปัก (demo)
+        notePins.forEach(p => addNoteMarker(p));
+      });
+      mapInstanceRef.current = map;
+      return () => { map.remove(); mapInstanceRef.current = null; };
   }, []); // Run once on mount
 
-  // Update Markers
+  // Update Markers (MapLibre)
   useEffect(() => {
       if (!mapInstanceRef.current) return;
       const map = mapInstanceRef.current;
 
-      const updateMarkers = async () => {
-          const onlineUsers = usersList.filter(u => u.showOnExplore);
+      const onlineUsers = usersList.filter(u => u.showOnExplore);
 
-          Object.keys(markersRef.current).forEach(id => {
-              if (!onlineUsers.find(u => u.id === id)) {
-                  markersRef.current[id].remove();
-                  delete markersRef.current[id];
-              }
-          });
-
-          for (const user of onlineUsers) {
-              if (markersRef.current[user.id]) continue;
-              const iconUrl = await createMarkerIcon(user);
-              const pos = getProfilePosition(user.province);
-              const icon = L.icon({ iconUrl: iconUrl, iconSize: [60, 60], iconAnchor: [30, 30], popupAnchor: [0, -30] });
-              const marker = L.marker([pos.lat, pos.lng], { icon });
-              marker.on('click', () => handleUserClick(user));
-              marker.addTo(map);
-              markersRef.current[user.id] = marker;
+      Object.keys(markersRef.current).forEach(id => {
+          if (!onlineUsers.find(u => u.id === id)) {
+              markersRef.current[id].remove();
+              delete markersRef.current[id];
           }
-      };
+      });
 
-      updateMarkers();
+      for (const u of onlineUsers) {
+          if (markersRef.current[u.id]) continue;
+          const pos = getProfilePosition(u.province);
+          positionCache.current[u.id] = pos;
+          const el = createUserMarkerEl(u);
+          const inner = el.querySelector('.zel-marker-inner') as HTMLElement | null;
+          const scale = proximityScale(u.province);
+          if (inner) {
+              inner.style.transform = `scale(${scale})`;
+              if (scale > 1.15) inner.style.filter = 'drop-shadow(0 6px 10px rgba(255,122,47,.55))';
+          }
+          const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([pos.lng, pos.lat]).addTo(map);
+          el.addEventListener('click', () => handleUserClick(u));
+          markersRef.current[u.id] = marker;
+      }
   }, [usersList]);
 
   // Handle Sidebar Resize
   useEffect(() => {
       if (mapInstanceRef.current) {
-          setTimeout(() => mapInstanceRef.current?.invalidateSize(), 300);
+          setTimeout(() => mapInstanceRef.current?.resize(), 300);
       }
   }, [sidebarOpen]);
 
@@ -379,6 +398,14 @@ export const Explore: React.FC = () => {
         <span>{userProvince ? `📍 ${userProvince}` : 'แชร์ตำแหน่ง'}</span>
       </button>
 
+      <button
+        onClick={handleAddNote}
+        className="fixed top-[124px] right-3 z-[55] flex items-center space-x-2 px-3 py-2 rounded-xl glass-card border-[var(--blueprint)] text-xs font-bold shadow-lg hover:scale-105 transition-transform"
+        title="ปักโน้ตบนแผนที่ (ที่จุดกลางแผนที่)"
+      >
+        <span>📝 ปักโน้ต</span>
+      </button>
+
       {geoError && (
         <div className="fixed top-32 right-3 z-[55] px-3 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-[11px] text-red-200 max-w-[200px]">
           {geoError}
@@ -389,7 +416,7 @@ export const Explore: React.FC = () => {
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         aria-label={sidebarOpen ? 'ปิดรายชื่อ' : 'เปิดรายชื่อ'}
-        className="hidden md:flex fixed top-20 left-[88px] lg:left-[256px] z-40 w-11 h-16 rounded-r-xl bg-white dark:bg-gray-800 border border-l-0 shadow-md items-center justify-center text-[var(--text-secondary)] hover:text-[var(--orange)] transition-colors"
+        className="hidden md:flex fixed top-20 left-[320px] z-40 w-11 h-16 rounded-r-xl bg-white dark:bg-gray-800 border border-l-0 shadow-md items-center justify-center text-[var(--text-secondary)] hover:text-[var(--orange)] transition-colors"
       >
         {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
       </button>
@@ -397,7 +424,7 @@ export const Explore: React.FC = () => {
       {/* Sidebar List — มือถือเป็น bottom sheet (peek เริ่มต้น) / เดสก์ท็อปเป็นแผงซ้าย */}
       <div className={`glass-card fixed z-30 flex flex-col border-[var(--orange)]
         left-0 right-0 bottom-0 top-auto w-full max-w-none rounded-t-2xl max-h-[82vh]
-        md:left-[88px] lg:left-[256px] md:top-20 md:bottom-2 md:right-auto md:w-80 md:max-w-sm md:rounded-none md:max-h-none
+        md:left-0 lg:left-0 md:top-20 md:bottom-2 md:right-auto md:w-80 md:max-w-sm md:rounded-none md:max-h-none
         transition-transform duration-300
         ${mobileSheetOpen ? 'max-md:translate-y-0' : 'max-md:translate-y-[calc(100%-84px)]'}
         ${sidebarOpen ? 'md:translate-x-0' : 'md:-translate-x-[110%]'}
