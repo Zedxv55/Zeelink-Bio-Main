@@ -9,6 +9,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Logo } from '../components/Logo';
 import { DemoOverlay } from '../components/DemoOverlay';
 import { haversineKm } from '../lib/ranking';
+import { getSponsoredIds } from '../lib/sponsor';
 
 const center = { lat: 13.7563, lng: 100.5018 };
 
@@ -239,16 +240,37 @@ export const Explore: React.FC = () => {
   // หมายเหตุ: ไม่ขอตำแหน่งอัตโนมัติแล้ว — จะขอเฉพาะเมื่อผู้ใช้กดปุ่ม "แชร์ตำแหน่ง" เท่านั้น
 
   // สร้างหมุดโปรไฟล์แบบ HTML (MapLibre) — ใกล้ผู้ใช้ยิ่งลอยเด่น (proximity)
-  const createUserMarkerEl = (u: Profile): HTMLDivElement => {
+  // ปลอดภัย: ใช้ DOM API ตั้ง .src เป็น property ไม่ใช้ innerHTML (กัน Stored XSS จาก photoUrl/displayName ของผู้ใช้)
+  const createUserMarkerEl = (u: Profile, sponsored = false): HTMLDivElement => {
     const el = document.createElement('div');
     el.style.cssText = 'cursor:pointer;';
-    el.innerHTML = `
-      <div class="zel-marker-inner" style="display:flex;flex-direction:column;align-items:center;transform-origin:bottom center;transition:transform .25s ease, filter .25s ease;">
-        <div style="width:46px;height:46px;border-radius:50%;overflow:hidden;border:3px solid ${u.showOnExplore ? '#FF7A2F' : '#9aa0a6'};box-shadow:0 4px 12px rgba(0,0,0,.4);background:#fff;">
-          <img src="${u.photoUrl}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
-        </div>
-        <div style="width:3px;height:14px;background:${u.showOnExplore ? '#FF7A2F' : '#9aa0a6'};border-radius:2px;"></div>
-      </div>`;
+    const inner = document.createElement('div');
+    inner.className = 'zel-marker-inner';
+    inner.style.cssText = 'display:flex;flex-direction:column;align-items:center;transform-origin:bottom center;transition:transform .25s ease, filter .25s ease;';
+    const ring = sponsored ? '#E8B23D' : (u.showOnExplore ? '#FF7A2F' : '#9aa0a6');
+
+    const imgWrap = document.createElement('div');
+    imgWrap.style.cssText = `width:46px;height:46px;border-radius:50%;overflow:hidden;border:3px solid ${ring};box-shadow:0 4px 12px rgba(0,0,0,.4);background:#fff;`;
+    const img = document.createElement('img');
+    img.src = u.photoUrl || '';            // property ไม่ใช่ string parse → ไม่รันเป็น tag
+    img.alt = '';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+    img.onerror = () => { img.style.display = 'none'; };
+    imgWrap.appendChild(img);
+
+    const bar = document.createElement('div');
+    bar.style.cssText = `width:3px;height:14px;background:${ring};border-radius:2px;`;
+
+    inner.append(imgWrap, bar);
+    el.appendChild(inner);
+
+    // ป้ายชื่อ (textContent → ปลอดภัยจาก XSS)
+    if (u.displayName) {
+      const label = document.createElement('div');
+      label.style.cssText = 'margin-top:3px;font-family:IBM Plex Mono,monospace;font-size:10px;color:#1F1B16;background:rgba(255,255,255,.88);padding:1px 6px;border-radius:6px;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;';
+      label.textContent = sponsored ? `⭐ ${u.displayName}` : u.displayName;
+      el.appendChild(label);
+    }
     return el;
   };
 
@@ -350,11 +372,13 @@ export const Explore: React.FC = () => {
           }
       });
 
+      const sponsored = getSponsoredIds();
       for (const u of onlineUsers) {
           if (markersRef.current[u.id]) continue;
           const pos = getProfilePosition(u.province);
           positionCache.current[u.id] = pos;
-          const el = createUserMarkerEl(u);
+          const sp = sponsored.has(u.id);
+          const el = createUserMarkerEl(u, sp);
           const inner = el.querySelector('.zel-marker-inner') as HTMLElement | null;
           const scale = proximityScale(u.province);
           if (inner) {
