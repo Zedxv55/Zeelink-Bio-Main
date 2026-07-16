@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { fonts, fontSize, palette } from '../lib/designTokens';
 import { detectPlatform, isValidUrl } from '../lib/social';
+import { CountUp } from '../components/ui/CountUp';
 import { supabase } from '../contexts/supabaseClient';
 
 // map แถวจาก DB (snake_case) เป็น Profile (camelCase) แบบเดียวกับ AuthContext
@@ -121,10 +122,15 @@ export const ProfilePage: React.FC = () => {
        )}
 
        <div className="max-w-md mx-auto min-h-screen flex flex-col p-6 relative z-10">
+          {/* Cover header (Link-in-Bio) — gradient overlay จากรูปโปรไฟล์ */}
+          <div className="relative -mx-6 -mt-6 h-44 rounded-b-3xl overflow-hidden">
+             <img src={profile.photoUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md" />
+             <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.12), rgba(0,0,0,0.62))' }} />
+          </div>
+
           <div className="flex-1 flex flex-col items-center pt-10">
-             
-             <div className="relative mb-6 group">
-                <img src={profile.photoUrl} className="w-32 h-32 rounded-full object-cover border-4 border-current shadow-2xl transition-transform hover:scale-105" />
+             <div className="relative -mt-20 mb-4">
+                <img src={profile.photoUrl} className="w-32 h-32 rounded-full object-cover border-4 shadow-2xl transition-transform hover:scale-105" style={{ borderColor: theme.buttonColor }} />
              </div>
 
              <h1 className="text-3xl font-bold mb-1 drop-shadow-md">{profile.displayName}</h1>
@@ -170,11 +176,11 @@ export const ProfilePage: React.FC = () => {
              {/* Stats */}
              <div className="flex justify-center space-x-8 w-full mb-10 py-6 border-y border-current/10">
                  <div className="text-center">
-                    <span className="block text-2xl font-bold">{profile.likes || 0}</span>
+                    <CountUp value={profile.likes || 0} className="block text-2xl font-bold" />
                     <span className="text-xs opacity-60 uppercase flex items-center justify-center mt-1"><Heart size={10} className="mr-1"/> ใจ</span>
                  </div>
                  <div className="text-center">
-                    <span className="block text-2xl font-bold">{profile.views || 0}</span>
+                    <CountUp value={profile.views || 0} className="block text-2xl font-bold" />
                     <span className="text-xs opacity-60 uppercase flex items-center justify-center mt-1"><Eye size={10} className="mr-1"/> เข้าชม</span>
                  </div>
              </div>
@@ -207,7 +213,7 @@ export const ProfilePage: React.FC = () => {
                  </button>
              </div>
 
-             {/* Links (with social platform icons) */}
+             {/* Links (with social platform icons) — Link-in-Bio animated buttons */}
              <div className="w-full space-y-4 mb-12">
                  {profile.links.map(link => {
                     const platform = detectPlatform(link.url);
@@ -216,12 +222,12 @@ export const ProfilePage: React.FC = () => {
                     const label = link.title || platform.label;
                     return (
                       <a key={link.id} href={safeUrl} target="_blank" rel="noreferrer noopener"
-                         className={`flex items-center justify-center space-x-2 w-full py-4 text-center font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all opacity-90 hover:opacity-100 ${theme.enableGlassEffect ? 'backdrop-blur-md border border-white/30' : ''}`}
+                         className={`group flex items-center justify-center gap-2 w-full py-4 text-center font-bold text-sm rounded-xl shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg opacity-95 hover:opacity-100 ${theme.enableGlassEffect ? 'backdrop-blur-md border border-white/30' : ''}`}
                          style={{
                              backgroundColor: theme.enableGlassEffect ? 'rgba(255,255,255,0.2)' : theme.buttonColor,
                              color: theme.enableGlassEffect ? theme.textColor : '#fff'
                          }}>
-                          <Icon size={18} />
+                          <Icon size={18} className="transition-transform duration-200 group-hover:scale-110" />
                           <span>{label}</span>
                       </a>
                     );

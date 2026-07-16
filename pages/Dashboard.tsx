@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { THAI_REGIONS, AVAILABLE_FONTS } from '../constants';
 import { Link, Profile, ThemeConfig } from '../types';
 import { Camera, Save, Plus, Trash2, Copy, ExternalLink, MapPin, Smartphone, Palette, User, Sparkles, Image as ImageIcon, GripVertical, LocateFixed, Heart } from 'lucide-react';
@@ -20,6 +21,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
 
 export const Dashboard: React.FC = () => {
   const { user, profile, updateProfile, askAiStylist } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -178,10 +180,10 @@ export const Dashboard: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
-      alert('❌ ไฟล์ใหญ่เกินไป! กรุณาเลือกรูปที่มีขนาดไม่เกิน 5 MB');
+      toast.error('❌ ไฟล์ใหญ่เกินไป! กรุณาเลือกรูปที่มีขนาดไม่เกิน 5 MB');
       return;
     }
-    if (!user) { alert('กรุณาเข้าสู่ระบบก่อน'); return; }
+    if (!user) { toast.warning('กรุณาเข้าสู่ระบบก่อน'); return; }
 
     try {
       const safeName = file.name.replace(/\s+/g, '-');
@@ -193,10 +195,10 @@ export const Dashboard: React.FC = () => {
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       setPhotoUrl(data.publicUrl);
-      alert('✅ อัปโหลดรูปโปรไฟล์แล้ว');
+      toast.success('✅ อัปโหลดรูปโปรไฟล์แล้ว');
     } catch (err) {
       console.error('Upload error:', err);
-      alert('อัปโหลดไม่สำเร็จ กรุณาลองใหม่');
+      toast.error('อัปโหลดไม่สำเร็จ กรุณาลองใหม่');
     }
   };
 
@@ -206,7 +208,7 @@ export const Dashboard: React.FC = () => {
     if (files.length === 0) return;
     setUploadError(null);
 
-    if (!user) { alert('กรุณาเข้าสู่ระบบก่อน'); return; }
+    if (!user) { toast.warning('กรุณาเข้าสู่ระบบก่อน'); return; }
 
     // Hard cap enforcement (15 for regular users)
     const remaining = MAX_PORTFOLIO_IMAGES - portfolioImages.length;
@@ -259,18 +261,18 @@ export const Dashboard: React.FC = () => {
   const handleAiStylist = () => {
       const newTheme = askAiStylist();
       setThemeConfig(newTheme);
-      alert("✨ น้องซีเลือกธีมให้แล้วครับ!");
+      toast.success("✨ น้องซีเลือกธีมให้แล้วครับ!");
   };
 
   const handleSave = () => {
     if (!user) return;
 
     if (!photoUrl || photoUrl.includes('ui-avatars')) {
-        alert('⚠️ กรุณาอัปโหลดรูปโปรไฟล์ก่อนบันทึก');
+        toast.warning('⚠️ กรุณาอัปโหลดรูปโปรไฟล์ก่อนบันทึก');
         return;
     }
     if (!province || !district || !subDistrict) {
-        alert('⚠️ ต้องกรอกที่อยู่ให้ครบถ้วนเพื่อแสดงบนหน้า Online');
+        toast.warning('⚠️ ต้องกรอกที่อยู่ให้ครบถ้วนเพื่อแสดงบนหน้า Online');
         return;
     }
 
@@ -302,7 +304,7 @@ export const Dashboard: React.FC = () => {
 
     updateProfile(newProfile);
     setShareLink(`${window.location.origin}/#/${username}`);
-    alert(`🎉 บันทึกสำเร็จ! ลิงก์โปรไฟล์ของคุณพร้อมใช้งานแล้ว`);
+    toast.success(`🎉 บันทึกสำเร็จ! ลิงก์โปรไฟล์ของคุณพร้อมใช้งานแล้ว`);
   };
 
   const handleAddLink = () => {

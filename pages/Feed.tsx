@@ -5,6 +5,7 @@ import { Post, Profile } from '../types';
 import { GlassBackground } from '../components/GlassBackground';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { SkeletonPost } from '../components/ui/Skeleton';
 import { haversineKm } from '../lib/ranking';
 import { fonts, palette, lineHeight } from '../lib/designTokens';
 import { Heart, MessageCircle, Share2, Send, Image as ImageIcon, Video, Newspaper, X, Search, User, Map as MapIcon } from 'lucide-react';
@@ -29,7 +30,7 @@ const timeAgo = (iso: string): string => {
 };
 
 export const Feed: React.FC = () => {
-  const { user, profile, posts, createPost, toggleLikePost, addComment, uploadPostMedia, usersList, followingIds, followUser } = useAuth();
+  const { user, profile, posts, createPost, toggleLikePost, addComment, uploadPostMedia, usersList, followingIds, followUser, isLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   // สะพานค้นหาจากแถบเมนู (navbar) ผ่าน ?q=
@@ -213,7 +214,15 @@ export const Feed: React.FC = () => {
           </div>
 
           {/* ===== Feed Posts ===== */}
-          {visiblePosts.map(post => (
+          {isLoading && posts.length === 0 ? (
+            <>
+              <SkeletonPost />
+              <SkeletonPost />
+              <SkeletonPost />
+            </>
+          ) : (
+            <>
+              {visiblePosts.map(post => (
             <article key={post.id} className="glass-card p-4 border-[var(--glass-border)] animate-fade-in">
               {/* Author */}
               <div className="flex items-center gap-3 mb-3">
@@ -245,7 +254,7 @@ export const Feed: React.FC = () => {
 
               <div className="flex border-t border-[var(--glass-border)] pt-1">
                 <button onClick={() => toggleLikePost(post.id)} className={`flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-[var(--glass-border)] ${post.likedByMe ? 'text-[var(--orange)]' : 'opacity-70'}`}>
-                  <Heart size={18} className={post.likedByMe ? 'fill-[var(--orange)]' : ''} /> ถูกใจ
+                  <Heart key={post.id + (post.likedByMe ? '-l' : '')} size={18} className={post.likedByMe ? 'fill-[var(--orange)] zee-heart-pop' : ''} /> ถูกใจ
                 </button>
                 <button onClick={() => { setOpenCommentId(openCommentId === post.id ? null : post.id); setCommentFor(post.id); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-[var(--glass-border)] opacity-70">
                   <MessageCircle size={18} /> คอมเมนต์
@@ -318,6 +327,8 @@ export const Feed: React.FC = () => {
           {posts.length > 0 && visiblePosts.length === 0 && (
             <div className="text-center py-10 opacity-50">ไม่พบโพสต์ที่ตรงกับ &quot;{search}&quot;</div>
           )}
+          </> )}
+
           </div>
 
           {/* ===== คอลัมน์ขวา (เดสก์ท็อป xl ขึ้นไป) ===== */}

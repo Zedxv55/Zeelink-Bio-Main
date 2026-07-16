@@ -396,6 +396,47 @@
           scroll-behavior:auto !important;
         }
       }
+
+      /* ===== Toast / Snackbar notifications (plan #2) ===== */
+      .zee-toast{
+        display:flex; align-items:flex-start; gap:10px;
+        background: var(--glass-bg); border:1px solid var(--glass-border);
+        border-left:4px solid var(--orange);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        padding:12px 14px; color: var(--text-primary);
+        font-family: var(--font-body);
+        animation: toastIn .28s cubic-bezier(.2,.7,.2,1) both;
+      }
+      .zee-toast-icon{ flex-shrink:0; margin-top:1px; line-height:0; }
+      .zee-toast-title{ font-weight:700; font-size:13px; margin:0 0 2px; color: var(--text-primary); }
+      .zee-toast-msg{ font-size:13px; opacity:.88; line-height:1.45; margin:0; color: var(--text-primary); }
+      .zee-toast-close{ flex-shrink:0; opacity:.5; cursor:pointer; background:none; border:none; color:inherit; padding:2px; border-radius:6px; line-height:0; transition: opacity .15s ease, background-color .15s ease; }
+      .zee-toast-close:hover{ opacity:1; background: var(--glass-border); }
+      @keyframes toastIn{ from{ transform:translateX(120%); opacity:0; } to{ transform:translateX(0); opacity:1; } }
+
+      /* ===== Skeleton loading (plan #1) ===== */
+      .zee-skel{
+        display:block; border-radius:8px;
+        background: linear-gradient(90deg, var(--glass-border) 25%, var(--glass-bg) 37%, var(--glass-border) 63%);
+        background-size: 400% 100%;
+        animation: skelShimmer 1.4s ease infinite;
+      }
+      @keyframes skelShimmer{ 0%{ background-position:100% 0; } 100%{ background-position:0 0; } }
+
+      /* ===== Like heart pop (plan #8) ===== */
+      .zee-heart-pop{ animation: heartPop .42s ease; transform-origin:center; }
+      @keyframes heartPop{ 0%{ transform:scale(1);} 30%{ transform:scale(1.45);} 55%{ transform:scale(.85);} 100%{ transform:scale(1);} }
+
+      /* ===== Smooth theme switch (plan #6) ===== */
+      body, .glass-card{
+        transition: background-color .3s ease, color .3s ease, border-color .3s ease;
+      }
+
+      @media (prefers-reduced-motion: reduce){
+        .zee-toast, .zee-skel{ animation:none; }
+        .zee-skel{ background: var(--glass-border); }
+      }
     </style>
   </head>
   <body>

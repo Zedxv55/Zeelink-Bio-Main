@@ -3,6 +3,7 @@ import { User, Profile, SystemPopup, Question, QuestionStatus, Post, PostComment
 import { BANNED_WORDS, INITIAL_QUESTIONS } from '../constants';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { rankPosts } from '../lib/ranking';
+import { useToast } from './ToastContext';
 
 // Realtime presence ใช้ ref ระดับ module เพื่อไม่ให้หายเมื่อ component re-render
 let presenceChannel: any = null;
@@ -200,6 +201,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [allUsers, setAllUsers] = useState<AdminUserView[]>([]);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [aiConfigs, setAiConfigs] = useState<AiConfig[]>([]);
+  const { toast } = useToast();
 
   // โหลด user+profile จากอีเมล (RLS อนุญาต authenticated อ่านแถวตัวเอง)
   const loadUserByEmail = async (email: string): Promise<User | null> => {
@@ -475,7 +477,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .from('backups')
         .upload(`backup-${Date.now()}.json`, JSON.stringify(data, null, 2));
       if (error) throw error;
-      alert('✅ บันทึกข้อมูลสำเร็จใน Supabase Storage');
+      toast.success('✅ บันทึกข้อมูลสำเร็จใน Supabase Storage');
     } catch (error) {
       console.error('Backup error:', error);
       const data = { users: usersList, questions, popups, timestamp: new Date().toISOString() };

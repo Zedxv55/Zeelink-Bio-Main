@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
 import { SystemPopup, AiConfig, AdminUserView } from '../types';
+import { useToast } from '../contexts/ToastContext';
 
 const fmtLastSeen = (iso?: string | null): string => {
   if (!iso) return '—';
@@ -23,6 +24,7 @@ export const AdminPanel: React.FC = () => {
     onlineUsers, allUsers, loadAllUsers,
     posts, deletePost, aiConfigs, loadAiConfigs, saveAiConfig
   } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'users' | 'popups' | 'links' | 'backup' | 'ai' | 'feed'>('users');
 
   // Popup Form
@@ -106,11 +108,11 @@ export const AdminPanel: React.FC = () => {
     };
     createPopup(newPopup);
     setPopupTitle(''); setPopupImage(''); setPopupLink('');
-    alert("สร้างโฆษณาเรียบร้อย");
+    toast.success("สร้างโฆษณาเรียบร้อย");
   };
 
   const afterAction = async (fn: () => Promise<any>) => {
-    try { await fn(); } catch (e) { alert('เกิดข้อผิดพลาด: ' + (e as Error).message); }
+    try { await fn(); } catch (e) { toast.error('เกิดข้อผิดพลาด: ' + (e as Error).message); }
     await loadAllUsers();
   };
 
@@ -129,7 +131,7 @@ export const AdminPanel: React.FC = () => {
         updatedAt: new Date().toISOString()
       });
     } catch (e) {
-      alert('เปลี่ยนสิทธิ์ AI ไม่สำเร็จ: ' + (e as Error).message);
+      toast.error('เปลี่ยนสิทธิ์ AI ไม่สำเร็จ: ' + (e as Error).message);
     }
   };
 

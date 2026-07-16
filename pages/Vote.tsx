@@ -4,10 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { ThumbsUp, Send, Search, MessageSquare, Award, Heart, User } from 'lucide-react';
 import { GlassBackground } from '../components/GlassBackground';
 import { Button } from '../components/ui/Button';
+import { SkeletonQuestion } from '../components/ui/Skeleton';
+import { useToast } from '../contexts/ToastContext';
 
 export const Vote: React.FC = () => {
   const navigate = useNavigate();
-  const { user, questions, addQuestion, voteQuestion, usersList } = useAuth();
+  const { user, questions, addQuestion, voteQuestion, usersList, isLoading } = useAuth();
+  const { toast } = useToast();
   const [newText, setNewText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -15,8 +18,8 @@ export const Vote: React.FC = () => {
     e.preventDefault();
     if (!newText.trim() || !user) return;
     const res = await addQuestion(newText);
-    if (res.status === 'rejected') alert('คำถามไม่ผ่านการตรวจสอบ (พบคำไม่เหมาะสม)');
-    else alert('✅ ส่งคำถามแล้ว รอแอดมินตรวจสอบก่อนแสดงผล');
+    if (res.status === 'rejected') toast.error('คำถามไม่ผ่านการตรวจสอบ (พบคำไม่เหมาะสม)');
+    else toast.success('✅ ส่งคำถามแล้ว รอแอดมินตรวจสอบก่อนแสดงผล');
     setNewText('');
   };
 
@@ -58,6 +61,14 @@ export const Vote: React.FC = () => {
                   </div>
                </div>
                <div className="space-y-3 pr-2">
+                  {isLoading && approved.length === 0 ? (
+                    <>
+                      <SkeletonQuestion />
+                      <SkeletonQuestion />
+                      <SkeletonQuestion />
+                    </>
+                  ) : (
+                    <>
                   {filtered.map(q => (
                     <div key={q.id} className="glass-card p-5 flex justify-between items-center hover:bg-[var(--glass-border)] transition-all border-[var(--orange)] hover-glow-cyan">
                        <div className="flex-1 pr-4">
@@ -83,6 +94,7 @@ export const Vote: React.FC = () => {
                       </p>
                     </div>
                   )}
+                  </> )}
                </div>
             </div>
           </div>
