@@ -328,6 +328,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateProfile = async (newProfile: Profile) => {
     try {
+      // เกราะป้องกัน (defense-in-depth): รับเฉพาะ URL รูปที่ขึ้นต้น http(s)://
+      // ความปลอดภัยจริงอยู่ที่ RLS/trigger ฝั่ง server — ที่นี่กันซ้ำเผื่อลดความเสี่ยง XSS
+      const safePhotoUrl = newProfile.photoUrl && /^https?:\/\//i.test(newProfile.photoUrl)
+        ? newProfile.photoUrl
+        : '';
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -335,7 +340,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           user_id: newProfile.userId,
           username: newProfile.username,
           display_name: newProfile.displayName,
-          photo_url: newProfile.photoUrl,
+          photo_url: safePhotoUrl,
           bio: newProfile.bio,
           portfolio_images: newProfile.portfolioImages || [],
           region: newProfile.region,
@@ -695,7 +700,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return;
     try {
       // แนวทางหลัก: ใช้ RPC ฝั่ง server (SECURITY DEFINER) — กันแก้โพสต์คนอื่น + กันกดไลก์ซ้ำ (S10)
-      const { error } = await supabase.rpc('toggle_post_like', { p_id: postId, uid: user.id });
+      // ส่งแค่ p_id — RPC หาตัวตนผู้ใช้เองจาก session (กันสวมรอย/ปั่นยอดไลก์)
+      const { error } = await supabase.rpc('toggle_post_like', { p_id: postId });
       if (error) throw error;
     } catch (err) {
       // Fallback: ยังไม่มี RPC (รัน security-fixes.sql แล้วจะมี) → อัปเดตผ่าน liked_users แบบเดิม

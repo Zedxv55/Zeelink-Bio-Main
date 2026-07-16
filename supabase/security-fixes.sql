@@ -124,7 +124,7 @@ create policy "questions public read"
 
 create policy "questions owner insert"
   on public.questions for insert to authenticated
-  with check (true);
+  with check (user_id = (select id from public.users where email = auth.email()));
 
 create policy "questions admin all"
   on public.questions for all to authenticated
@@ -156,7 +156,7 @@ create policy "posts public read"
 
 create policy "posts auth insert"
   on public.posts for insert to authenticated
-  with check (true);
+  with check (user_id = (select id from public.users where email = auth.email()));
 
 -- อัปเดตโพสต์ทำได้เฉพาะแอดมิน (การกดไลก์ใช้ RPC toggle_post_like แทน — กันแก้ข้อความโพสต์คนอื่น = S10)
 create policy "posts admin update"
@@ -177,7 +177,7 @@ create policy "post_comments public read"
 
 create policy "post_comments auth insert"
   on public.post_comments for insert to authenticated
-  with check (true);
+  with check (user_id = (select id from public.users where email = auth.email()));
 
 create policy "post_comments admin delete"
   on public.post_comments for delete to authenticated
@@ -255,24 +255,34 @@ $$;
 grant execute on function public.vote_question(uuid) to authenticated;
 
 -- toggle_post_like: กดไลก์/เลิกไลก์ แบบ idempotent (แก้ S10 — ผู้ล็อกอินแก้ข้อความโพสต์คนอื่นไม่ได้)
-create or replace function public.toggle_post_like(p_id uuid, uid text)
+-- ห้ามรับ uid จาก client (ป้องกันปั่นยอดไลก์ปลอม/กดเลิกไลก์แทนคนอื่น) — หาตัวตนจาก session เอง
+drop function if exists public.toggle_post_like(uuid, text);
+
+create or replace function public.toggle_post_like(p_id uuid)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  current_uid text;
 begin
+  select id::text into current_uid from public.users where email = auth.email();
+  if current_uid is null then
+    raise exception 'ไม่พบผู้ใช้';
+  end if;
+
   update public.posts p
     set likes = coalesce(p.likes, 0)
-             + case when uid = any(coalesce(p.liked_users, array[]::text[])) then -1 else 1 end,
-        liked_users = case when uid = any(coalesce(p.liked_users, array[]::text[]))
-                           then array_remove(coalesce(p.liked_users, array[]::text[]), uid)
-                           else array_append(coalesce(p.liked_users, array[]::text[]), uid) end
+             + case when current_uid = any(coalesce(p.liked_users, array[]::text[])) then -1 else 1 end,
+        liked_users = case when current_uid = any(coalesce(p.liked_users, array[]::text[]))
+                           then array_remove(coalesce(p.liked_users, array[]::text[]), current_uid)
+                           else array_append(coalesce(p.liked_users, array[]::text[]), current_uid) end
   where p.id = p_id;
 end;
 $$;
 
-grant execute on function public.toggle_post_like(uuid, text) to authenticated;
+grant execute on function public.toggle_post_like(uuid) to authenticated;
 
 -- touch_presence: คงไว้ตาม admin-online.sql (สร้างเผื่อยังไม่รันไฟล์นั้น)
 create or replace function public.touch_presence()

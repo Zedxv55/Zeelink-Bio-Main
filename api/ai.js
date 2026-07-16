@@ -1,11 +1,46 @@
 // Zeelink — AI Mascot backend (Vercel serverless function)
 // AiMascot เรียกผ่าน POST /api/ai
 // คีย์ AI อยู่ฝั่ง server (AI_API_KEY ใน .env) — ไม่ถูก bundle ลง client
+import { createClient } from '@supabase/supabase-js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // --- ตรวจสอบผู้ใช้ (ถ้ามี Supabase ตั้งค่าไว้บน Vercel) ---
+  // กันยิง POST รัวๆ โดยไม่ล็อกอิน (เบิกโควตา Gemini ฟรีจนเว็บใช้ไม่ได้)
+  const sbUrl = process.env.VITE_SUPABASE_URL;
+  const sbKey = process.env.VITE_SUPABASE_ANON_KEY;
+  let userId = null;
+  if (sbUrl && sbKey) {
+    const auth = req.headers['authorization'] || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (!token) return res.status(401).json({ error: 'กรุณาเข้าสู่ระบบ' });
+    try {
+      const supabase = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data.user) return res.status(401).json({ error: 'ไม่พบผู้ใช้' });
+      userId = data.user.id;
+    } catch {
+      return res.status(401).json({ error: 'ตรวจสอบสิทธิ์ไม่สำเร็จ' });
+    }
+  }
+
+  // --- Rate limit แบบ best-effort (ต่อ IP/ผู้ใช้) ---
+  // หมายเหตุ: serverless อาจรีเซ็ต memory ระหว่างรอบ → กันได้บางส่วน
+  // สำหรับจำกัดจริงแนะนำเก็บ timestamp ในตาราง Supabase แล้วเช็คก่อนยิง Gemini
+  const RL_WINDOW = 60 * 1000; // 1 นาที
+  const RL_MAX = 20;           // สูงสุด 20 ครั้ง/นาที
+  const rlKey = userId || (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'anon').toString();
+  const now = Date.now();
+  const hits = (global.__zel_ai_rl = global.__zel_ai_rl || {});
+  hits[rlKey] = (hits[rlKey] || []).filter(t => now - t < RL_WINDOW);
+  if (hits[rlKey].length >= RL_MAX) {
+    return res.status(429).json({ error: 'ขอใช้บ่อยเกินไป กรุณารอสักครู่' });
+  }
+  hits[rlKey].push(now);
 
   // --- รับและตรวจสอบ input ---
   const { message, userName } = req.body || {};
