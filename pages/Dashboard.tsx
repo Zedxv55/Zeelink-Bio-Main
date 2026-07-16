@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { DemoOverlay } from '../components/DemoOverlay';
 import { supabase, isSupabaseConfigured } from '../contexts/supabaseClient';
 import { detectPlatform, isValidUrl } from '../lib/social';
+import { setSponsored, isSponsored } from '../lib/sponsor';
 import L from 'leaflet';
 
 // ===== Image gallery limits (Security: client-side hard cap) =====
@@ -65,6 +66,8 @@ export const Dashboard: React.FC = () => {
   // รับบริจาค/Support ผ่าน PromptPay
   const [acceptSupport, setAcceptSupport] = useState(false);
   const [promptpay, setPromptpay] = useState('');
+  // หมุดสปอนเซอร์บนแผนที่ (monetization — demo เก็บ localStorage)
+  const [sponsored, setSponsoredState] = useState(false);
   // Demo social links (shown in preview mode before login)
   const [links, setLinks] = useState<Link[]>([
     { id: 'demo1', title: 'Facebook', url: 'https://facebook.com/zeelink', clicks: 0, isActive: true },
@@ -151,6 +154,7 @@ export const Dashboard: React.FC = () => {
       setPortfolioImages(profile.portfolioImages || []);
       setAcceptSupport(profile.themeConfig?.acceptSupport || false);
       setPromptpay(profile.themeConfig?.promptpay || '');
+      setSponsoredState(isSponsored(profile.id));
 
       if (profile.themeConfig) setThemeConfig(profile.themeConfig);
 
@@ -492,6 +496,21 @@ export const Dashboard: React.FC = () => {
                           <div className="flex items-center justify-between p-4 bg-black/10 rounded-lg mt-4">
                               <span className="text-sm font-bold">แสดงบนหน้า Online</span>
                               <button onClick={() => setShowOnExplore(!showOnExplore)} className={`w-12 h-6 rounded-full transition-colors ${showOnExplore ? 'bg-green-500' : 'bg-gray-400'}`}><div className={`w-4 h-4 bg-white rounded-full transform transition-transform ${showOnExplore ? 'translate-x-7' : 'translate-x-1'} mt-1`} /></button>
+                          </div>
+
+                          {/* หมุดสปอนเซอร์บนแผนที่ (monetization) */}
+                          <div className="glass-card p-4 mt-4 border-yellow">
+                              <h3 className="font-bold flex items-center gap-2"><span className="text-yellow-500">⭐</span> หมุดสปอนเซอร์บนแผนที่</h3>
+                              <p className="text-[11px] leading-relaxed opacity-70 mt-1 mb-3">
+                                ทำหมุดของคุณเด่นกว่าใคร — วงแหวนทอง + เรืองแสง + ป้าย ⭐ บนหน้าแผนที่ Explore
+                                เพิ่มโอกาสให้คนกดเข้าชมโปรไฟล์ (โหมดทดลอง: ยังไม่ตัดเงินจริง)
+                              </p>
+                              <button
+                                onClick={() => { if (profile?.id) { const n = !sponsored; setSponsoredState(n); setSponsored(profile.id, n); } }}
+                                className={`w-full py-2 rounded-lg text-sm font-bold transition-colors ${sponsored ? 'bg-yellow-500 text-black' : 'bg-black/10'}`}
+                              >
+                                {sponsored ? '✓ กำลังสปอนเซอร์ (ปิดได้)' : 'อัปเกรดเป็นสปอนเซอร์ (ทดลอง)'}
+                              </button>
                           </div>
                       </div>
                   </div>

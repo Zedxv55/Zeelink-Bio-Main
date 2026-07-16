@@ -46,11 +46,12 @@ export const ProfilePage: React.FC = () => {
   const canFollow = !!user && profile && user.id !== profile.userId;
   // รับบริจาค/Support
   const [supportOpen, setSupportOpen] = useState(false);
+  const [tier, setTier] = useState<number | null>(null);
   const promptpay = profile.themeConfig?.promptpay || '';
   const acceptSupport = profile.themeConfig?.acceptSupport || false;
   const supportEnabled = acceptSupport && (promptpay.length === 10 || promptpay.length === 13);
   // promptpay.io สร้าง QR PromptPay ฟรี (EMVCo) โดยไม่ต้องคีย์/dependency
-  const promptpayQr = supportEnabled ? `https://promptpay.io/${promptpay}.png` : '';
+  const promptpayQr = supportEnabled ? `https://promptpay.io/${promptpay}.png${tier ? '?amount=' + tier : ''}` : '';
   const toggleImageLike = (i: number) => {
     setLikedImages(prev => {
       const next = new Set(prev);
@@ -238,9 +239,18 @@ export const ProfilePage: React.FC = () => {
        <Modal open={supportOpen} onClose={() => setSupportOpen(false)} title={`💛 สนับสนุน ${profile.displayName}`}>
          <div className="p-5 flex flex-col items-center text-center space-y-4" style={{ color: theme.textColor }}>
            <p className="text-sm opacity-80">สแกน QR ด้วยแอปธนาคารเพื่อสนับสนุนผลงาน</p>
+           <div className="flex gap-2 w-full">
+             {[20, 50, 100].map(t => (
+               <button key={t} onClick={() => setTier(t)}
+                 className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${tier === t ? 'bg-yellow-500 text-black' : 'bg-black/10'}`}>
+                 {t === 20 ? '☕' : t === 50 ? '🍚' : '🌟'} {t}
+               </button>
+             ))}
+           </div>
            {promptpayQr && (
              <img src={promptpayQr} alt="PromptPay QR" className="w-56 h-56 rounded-xl bg-white p-2" />
            )}
+           {tier && <p className="text-xs font-bold opacity-90">โอนจำนวน {tier} บาท (แนบใน QR แล้ว)</p>}
            <div className="w-full flex items-center gap-2 p-2 rounded-lg" style={{ background: 'rgba(127,127,127,0.15)' }}>
              <span className="text-sm font-mono flex-1 text-left truncate">{promptpay}</span>
              <button
