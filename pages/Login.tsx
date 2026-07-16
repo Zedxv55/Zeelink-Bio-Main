@@ -112,7 +112,7 @@ export const Login: React.FC = () => {
   const subtitle = mode === 'forgot' ? 'ใส่อีเมล เราจะส่งลิงก์รีเซ็ตให้' : mode === 'setpw' ? 'ตั้งรหัสผ่านใหม่สำหรับบัญชีนี้' : mode === 'register' ? 'สร้างบัญชีเพื่อเริ่มต้นใช้งาน' : 'ยินดีต้อนรับกลับสู่ Zeelink';
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-4 py-10 overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen relative flex items-center justify-center px-4 py-10 overflow-hidden nb-page-bg">
       {/* แสงสีบรรยากาศแบบเรียบง่าย (notebook) */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         <div className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full" style={{ background: 'radial-gradient(circle, var(--orange-soft), transparent 70%)' }} />

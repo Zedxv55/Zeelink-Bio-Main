@@ -149,9 +149,15 @@ export const Feed: React.FC = () => {
                 <div className="flex-1">
                   <textarea
                     value={text}
-                    onChange={e => setText(e.target.value)}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      // auto-resize: ให้กล่องโตตามข้อความ (กันข้อความยาวๆ ต้องสกรอลในกล่อง)
+                      const el = e.currentTarget;
+                      el.style.height = 'auto';
+                      el.style.height = `${el.scrollHeight}px`;
+                    }}
                     placeholder="คุณกำลังคิดอะไรอยู่ หรือแชร์ผลงาน?"
-                    className="w-full p-3 rounded-xl outline-none resize-none h-20"
+                    className="w-full p-3 rounded-xl outline-none resize-none min-h-[80px]"
                   />
                   {mediaUrl.trim() && (
                     <div className="mt-2 rounded-lg overflow-hidden border border-[var(--glass-border)] relative">

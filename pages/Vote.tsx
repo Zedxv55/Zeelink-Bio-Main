@@ -70,6 +70,19 @@ export const Vote: React.FC = () => {
                        </button>
                     </div>
                   ))}
+                  {filtered.length === 0 && (
+                    <div className="glass-card p-6 text-center border-[var(--glass-border)] animate-fade-in">
+                      <div className="text-4xl mb-3">🗳️</div>
+                      <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                        {approved.length === 0 ? 'ยังไม่มีคำถามเลย' : 'ไม่พบคำถามที่ตรงกับการค้นหา'}
+                      </h3>
+                      <p className="text-sm opacity-70 mb-4" style={{ lineHeight: 1.5 }}>
+                        {approved.length === 0
+                          ? 'เป็นคนแรกที่ตั้งคำถามให้ชุมชนกันเถอะ!'
+                          : 'ลองค้นหาด้วยคำอื่นดู'}
+                      </p>
+                    </div>
+                  )}
                </div>
             </div>
           </div>
@@ -124,6 +137,9 @@ export const Vote: React.FC = () => {
                     </div>
                   );
                 })}
+                {top5.length === 0 && (
+                  <p className="text-sm opacity-50 text-center py-4">ยังไม่มีคำถามในอันดับ — มาร่วมโหวตกัน!</p>
+                )}
              </div>
           </div>
         </div>

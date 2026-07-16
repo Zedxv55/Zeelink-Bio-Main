@@ -131,12 +131,16 @@
       html, body { margin:0; padding:0; }
       body{
         font-family: var(--thai);
-        background:
-          repeating-linear-gradient(var(--bg-primary), var(--bg-primary) 39px, var(--rule-color) 40px);
+        background: var(--bg-primary);
         color: var(--text-primary);
         line-height:1.7;
         -webkit-font-smoothing:antialiased;
         min-height:100vh;
+      }
+      /* ลายเส้นสมุด — เก็บเฉพาะหน้า landing/login (หน้าที่ใช้งานหนักเช่น ฟีด/แดชบอร์ด เป็นพื้นเรียบเพื่ออ่านสบายตา) */
+      .nb-page-bg{
+        background:
+          repeating-linear-gradient(var(--bg-primary), var(--bg-primary) 39px, var(--rule-color) 40px);
       }
       *{ box-sizing:border-box; }
 
