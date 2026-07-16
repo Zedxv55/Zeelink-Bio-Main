@@ -47,8 +47,8 @@ export const ProfilePage: React.FC = () => {
   // รับบริจาค/Support
   const [supportOpen, setSupportOpen] = useState(false);
   const [tier, setTier] = useState<number | null>(null);
-  const promptpay = profile.themeConfig?.promptpay || '';
-  const acceptSupport = profile.themeConfig?.acceptSupport || false;
+  const promptpay = profile?.themeConfig?.promptpay || '';
+  const acceptSupport = profile?.themeConfig?.acceptSupport || false;
   const supportEnabled = acceptSupport && (promptpay.length === 10 || promptpay.length === 13);
   // promptpay.io สร้าง QR PromptPay ฟรี (EMVCo) โดยไม่ต้องคีย์/dependency
   const promptpayQr = supportEnabled ? `https://promptpay.io/${promptpay}.png${tier ? '?amount=' + tier : ''}` : '';
@@ -117,7 +117,7 @@ export const ProfilePage: React.FC = () => {
     >
        {/* Glass Overlay if enabled */}
        {theme.enableGlassEffect && (
-           <div className="absolute inset-0 bg-white/10 backdrop-blur-sm pointer-events-none z-0" />
+           <div className="absolute inset-0 bg-[var(--glass-border)] backdrop-blur-sm pointer-events-none z-0" />
        )}
 
        <div className="max-w-md mx-auto min-h-screen flex flex-col p-6 relative z-10">
@@ -158,7 +158,7 @@ export const ProfilePage: React.FC = () => {
                          aria-label="กดใจรูปนี้"
                          className="absolute bottom-1 right-1 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/40 text-white text-[10px] opacity-80 hover:opacity-100 transition-opacity"
                        >
-                         <Heart size={12} className={likedImages.has(i) ? 'fill-pink-500 text-pink-500' : ''} />
+                         <Heart size={12} className={likedImages.has(i) ? 'fill-[var(--orange)] text-[var(--orange)]' : ''} />
                          {likedImages.has(i) ? 'แล้ว' : 'ใจ'}
                        </button>
                      </div>

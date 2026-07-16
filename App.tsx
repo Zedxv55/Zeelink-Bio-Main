@@ -72,8 +72,8 @@ const App: React.FC = () => {
           </Modal>
         )}
 
-        {/* เว้นระยะด้านบนให้แถบเมนู (ทุกจอ) */}
-        <div className={showChrome ? 'pt-[60px]' : ''}>
+        {/* เว้นระยะด้านบนให้แถบเมนู + ด้านล่างให้แท็บล่างมือถือ (เดสก์ท็อปไม่ต้องเว้นล่าง) */}
+        <div className={showChrome ? 'pt-[60px] pb-24 md:pb-0' : ''}>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* หน้าแรก = หน้าล็อกอินเสมอ (มีฟีดเบลอข้างหลัง) */}

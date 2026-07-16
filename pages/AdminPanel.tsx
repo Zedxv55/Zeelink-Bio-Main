@@ -143,12 +143,12 @@ export const AdminPanel: React.FC = () => {
               <h1 className="text-3xl font-bold flex items-center"><ShieldCheck className="mr-3 text-[var(--orange)]" size={32} />Admin Control</h1>
             </div>
             <div className="glass-card p-1 flex space-x-2">
-              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-[var(--orange)] text-white' : 'hover:bg-white/10'}`}>Users</button>
-              <button onClick={() => setActiveTab('popups')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'popups' ? 'bg-[var(--pink)] text-white' : 'hover:bg-white/10'}`}>Popups</button>
-              <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'links' ? 'bg-orange-600 text-white' : 'hover:bg-white/10'}`}>Links</button>
-              <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-purple-600 text-white' : 'hover:bg-white/10'}`}><Bot size={13} className="inline mr-1" />AI</button>
-              <button onClick={() => setActiveTab('feed')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'feed' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'}`}><Newspaper size={13} className="inline mr-1" />Feed</button>
-              <button onClick={() => setActiveTab('backup')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'backup' ? 'bg-green-600 text-white' : 'hover:bg-white/10'}`}>Backup</button>
+              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-[var(--orange)] text-white' : 'hover:bg-[var(--glass-border)]'}`}>Users</button>
+              <button onClick={() => setActiveTab('popups')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'popups' ? 'bg-[var(--pink)] text-white' : 'hover:bg-[var(--glass-border)]'}`}>Popups</button>
+              <button onClick={() => setActiveTab('links')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'links' ? 'bg-orange-600 text-white' : 'hover:bg-[var(--glass-border)]'}`}>Links</button>
+              <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-purple-600 text-white' : 'hover:bg-[var(--glass-border)]'}`}><Bot size={13} className="inline mr-1" />AI</button>
+              <button onClick={() => setActiveTab('feed')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'feed' ? 'bg-blue-600 text-white' : 'hover:bg-[var(--glass-border)]'}`}><Newspaper size={13} className="inline mr-1" />Feed</button>
+              <button onClick={() => setActiveTab('backup')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'backup' ? 'bg-green-600 text-white' : 'hover:bg-[var(--glass-border)]'}`}>Backup</button>
             </div>
           </div>
 
@@ -200,7 +200,7 @@ export const AdminPanel: React.FC = () => {
                       <th className="px-6 py-4 text-right">จัดการ</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/10">
+                  <tbody className="divide-y divide-[var(--glass-border)]">
                     {allUsers.length === 0 && (
                       <tr><td colSpan={5} className="px-6 py-8 text-center text-sm opacity-60">ยังไม่มีข้อมูลผู้ใช้ (กำลังโหลด หรือยังไม่มีบัญชี)</td></tr>
                     )}
@@ -210,7 +210,7 @@ export const AdminPanel: React.FC = () => {
                       return (
                         <tr key={u.userId || u.id} className="hover:bg-white/5">
                           <td className="px-6 py-4 flex items-center space-x-3">
-                            <img src={u.photoUrl} className="w-8 h-8 rounded-full bg-white/10" alt="" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
+                            <img src={u.photoUrl} className="w-8 h-8 rounded-full bg-[var(--glass-border)]" alt="" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
                             <div>
                               <p className="text-xs font-bold">{u.displayName || u.name || '(ไม่ระบุ)'}{isSelf && <span className="ml-1 text-[var(--orange)]">(คุณ)</span>}</p>
                               <p className="text-[10px] opacity-60">@{u.username || '—'} · {u.email || '—'}</p>
@@ -314,7 +314,7 @@ export const AdminPanel: React.FC = () => {
 
           {activeTab === 'ai' && (
             <div className="space-y-6 animate-fade-in">
-              <div className="glass-card p-4 border-purple-500/40">
+              <div className="glass-card p-4 border-[var(--glass-border)]">
                 <h3 className="font-bold mb-1 flex items-center gap-2"><Bot size={18} className="text-purple-400" />ควบคุม AI (แอดมิน)</h3>
                 <p className="text-xs opacity-60">ตั้งค่าโมเดล / บุคลิก AI ระดับเว็บ และต่อคนแต่ละคนได้</p>
               </div>

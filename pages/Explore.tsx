@@ -493,7 +493,7 @@ export const Explore: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {shown.map(profile => (
-            <div key={profile.id} onClick={() => handleUserClick(profile)} className="p-3 bg-white/10 rounded-xl border border-white/10 hover:border-[var(--orange)] cursor-pointer transition-all flex items-center space-x-3 group relative hover-glow-cyan">
+            <div key={profile.id} onClick={() => handleUserClick(profile)} className="p-3 bg-[var(--glass-border)] rounded-xl border border-[var(--glass-border)] hover:border-[var(--orange)] cursor-pointer transition-all flex items-center space-x-3 group relative hover-glow-cyan">
                 <div className="relative">
                     <img src={profile.photoUrl} className="w-10 h-10 rounded-full object-cover border border-white/20" />
                     <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-white rounded-full ${profile.showOnExplore ? 'bg-[var(--green)]' : 'bg-gray-400'}`}></div>

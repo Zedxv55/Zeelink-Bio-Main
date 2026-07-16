@@ -154,7 +154,7 @@ export const Feed: React.FC = () => {
                     className="w-full p-3 rounded-xl outline-none resize-none h-20"
                   />
                   {mediaUrl.trim() && (
-                    <div className="mt-2 rounded-lg overflow-hidden border border-white/10 relative">
+                    <div className="mt-2 rounded-lg overflow-hidden border border-[var(--glass-border)] relative">
                       {mediaType === 'image'
                         ? <img src={mediaUrl} className="w-full max-h-60 object-cover" />
                         : <video src={mediaUrl} controls className="w-full max-h-60" />}
@@ -163,10 +163,10 @@ export const Feed: React.FC = () => {
                   )}
                   <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
                     <div className="flex gap-1 flex-wrap">
-                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-white/10 disabled:opacity-50" style={{ color: palette.blue }}>
+                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-[var(--glass-border)] disabled:opacity-50" style={{ color: palette.blue }}>
                         <ImageIcon size={16} /> {uploading ? 'กำลังอัปโหลด...' : 'รูป/วิดีโอ'}
                       </button>
-                      <button type="button" onClick={() => { const u = prompt('วาง URL รูปภาพหรือวิดีโอ'); if (u) { setMediaUrl(u); setMediaType(detectMedia(u).type); } }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-white/10" style={{ color: palette.pink }}>
+                      <button type="button" onClick={() => { const u = prompt('วาง URL รูปภาพหรือวิดีโอ'); if (u) { setMediaUrl(u); setMediaType(detectMedia(u).type); } }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold hover:bg-[var(--glass-border)]" style={{ color: palette.pink }}>
                         ลิงก์ URL
                       </button>
                       <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFile} />
@@ -225,10 +225,10 @@ export const Feed: React.FC = () => {
 
               {/* Media */}
               {post.mediaType === 'image' && post.mediaUrl && (
-                <img src={post.mediaUrl} className="w-full rounded-xl border border-white/10 mb-3 max-h-96 object-cover" />
+                <img src={post.mediaUrl} className="w-full rounded-xl border border-[var(--glass-border)] mb-3 max-h-96 object-cover" />
               )}
               {post.mediaType === 'video' && post.mediaUrl && (
-                <video src={post.mediaUrl} controls className="w-full rounded-xl border border-white/10 mb-3 max-h-96" />
+                <video src={post.mediaUrl} controls className="w-full rounded-xl border border-[var(--glass-border)] mb-3 max-h-96" />
               )}
 
               {/* Stats */}
@@ -237,21 +237,21 @@ export const Feed: React.FC = () => {
                 <span>{post.comments.length > 0 ? `${post.comments.length} ความคิดเห็น` : ''}</span>
               </div>
 
-              <div className="flex border-t border-white/10 pt-1">
-                <button onClick={() => toggleLikePost(post.id)} className={`flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-white/10 ${post.likedByMe ? 'text-pink-500' : 'opacity-70'}`}>
-                  <Heart size={18} className={post.likedByMe ? 'fill-pink-500' : ''} /> ถูกใจ
+              <div className="flex border-t border-[var(--glass-border)] pt-1">
+                <button onClick={() => toggleLikePost(post.id)} className={`flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-[var(--glass-border)] ${post.likedByMe ? 'text-[var(--orange)]' : 'opacity-70'}`}>
+                  <Heart size={18} className={post.likedByMe ? 'fill-[var(--orange)]' : ''} /> ถูกใจ
                 </button>
-                <button onClick={() => { setOpenCommentId(openCommentId === post.id ? null : post.id); setCommentFor(post.id); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-white/10 opacity-70">
+                <button onClick={() => { setOpenCommentId(openCommentId === post.id ? null : post.id); setCommentFor(post.id); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-[var(--glass-border)] opacity-70">
                   <MessageCircle size={18} /> คอมเมนต์
                 </button>
-                <button onClick={() => { if (navigator.share) navigator.share({ title: post.displayName, text: post.text, url: window.location.origin + '/#/' + post.username }); else navigator.clipboard.writeText(window.location.origin + '/#/' + post.username); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-white/10 opacity-70">
+                <button onClick={() => { if (navigator.share) navigator.share({ title: post.displayName, text: post.text, url: window.location.origin + '/#/' + post.username }); else navigator.clipboard.writeText(window.location.origin + '/#/' + post.username); }} className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold rounded-lg transition-colors hover:bg-[var(--glass-border)] opacity-70">
                   <Share2 size={18} /> แชร์
                 </button>
               </div>
 
               {/* Comments */}
               {openCommentId === post.id && (
-                <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
+                <div className="mt-3 space-y-3 border-t border-[var(--glass-border)] pt-3">
                   {post.comments.map(c => (
                     <div key={c.id} className="flex gap-2">
                       <img src={c.photoUrl} className="w-7 h-7 rounded-full object-cover" />
@@ -376,7 +376,7 @@ const NearbyWidget: React.FC<{
           );
         })}
       </div>
-      <button onClick={() => navigate('/explore')} className="w-full mt-3 text-xs font-bold py-2 rounded-lg hover:bg-white/10" style={{ color: palette.blue }}>
+      <button onClick={() => navigate('/explore')} className="w-full mt-3 text-xs font-bold py-2 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: palette.blue }}>
         ดูแผนที่ทั้งหมด →
       </button>
     </Card>

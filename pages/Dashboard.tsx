@@ -334,7 +334,7 @@ export const Dashboard: React.FC = () => {
             }}
           >
               {themeConfig.enableGlassEffect && (
-                  <div className="absolute inset-0 bg-white/10 backdrop-blur-sm pointer-events-none" />
+                  <div className="absolute inset-0 bg-[var(--glass-border)] backdrop-blur-sm pointer-events-none" />
               )}
 
               <div className="relative z-10 w-full flex flex-col items-center">
@@ -392,8 +392,8 @@ export const Dashboard: React.FC = () => {
               </div>
 
               <div className="glass-card p-2 flex space-x-2">
-                  <button onClick={() => setActiveTab('profile')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-[var(--orange)] text-white shadow-lg' : 'hover:bg-white/10'}`}> <User size={18} className="inline mr-2" /> ข้อมูลทั่วไป </button>
-                  <button onClick={() => setActiveTab('design')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'design' ? 'bg-[var(--pink)] text-white shadow-lg' : 'hover:bg-white/10'}`}> <Palette size={18} className="inline mr-2" /> ตกแต่ง & ลิงก์ </button>
+                  <button onClick={() => setActiveTab('profile')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-[var(--orange)] text-white shadow-lg' : 'hover:bg-[var(--glass-border)]'}`}> <User size={18} className="inline mr-2" /> ข้อมูลทั่วไป </button>
+                  <button onClick={() => setActiveTab('design')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'design' ? 'bg-[var(--pink)] text-white shadow-lg' : 'hover:bg-[var(--glass-border)]'}`}> <Palette size={18} className="inline mr-2" /> ตกแต่ง & ลิงก์ </button>
               </div>
 
               {activeTab === 'profile' && (
@@ -438,7 +438,7 @@ export const Dashboard: React.FC = () => {
                                     onDragStart={() => handleDragStart(index)}
                                     onDragOver={(e) => handleDragOver(e, index)}
                                     onDragEnd={handleDragEnd}
-                                    className={`relative group rounded-lg overflow-hidden border-2 cursor-move transition-all ${dragIndex === index ? 'border-[var(--orange)] opacity-50' : 'border-white/10 hover:border-[var(--blue)]'}`}
+                                    className={`relative group rounded-lg overflow-hidden border-2 cursor-move transition-all ${dragIndex === index ? 'border-[var(--orange)] opacity-50' : 'border-[var(--glass-border)] hover:border-[var(--blue)]'}`}
                                   >
                                       <img src={img} className="w-full h-24 object-cover" alt={`portfolio ${index+1}`} />
                                       <div className="absolute top-1 left-1 bg-black/60 rounded px-1.5 text-[10px] font-bold flex items-center">
@@ -489,7 +489,7 @@ export const Dashboard: React.FC = () => {
                                 {geoLoading ? 'กำลังระบุ...' : <><LocateFixed size={13} /> แชร์ตำแหน่งปัจจุบัน</>}
                               </button>
                             </div>
-                            <div ref={mapContainerRef} className="w-full h-56 rounded-xl overflow-hidden border border-white/10 z-0" style={{ background: '#aadaff' }} />
+                            <div ref={mapContainerRef} className="w-full h-56 rounded-xl overflow-hidden border border-[var(--glass-border)] z-0" style={{ background: '#aadaff' }} />
                             {geoError && <p className="text-[11px] text-red-400 mt-1">{geoError}</p>}
                           </div>
 
@@ -557,7 +557,7 @@ export const Dashboard: React.FC = () => {
                       <div className="glass-card p-6 border-pink">
                            <div className="flex justify-between items-center mb-4">
                                <h3 className="font-bold">ลิงก์โซเชียลของคุณ</h3>
-                               <button onClick={handleAddLink} className="text-white text-xs font-bold flex items-center px-3 py-1 bg-pink-500 rounded-full hover:bg-pink-600"><Plus size={14} className="mr-1" /> เพิ่มลิงก์</button>
+                               <button onClick={handleAddLink} className="text-white text-xs font-bold flex items-center px-3 py-1 bg-[var(--orange)] rounded-full hover:bg-pink-600"><Plus size={14} className="mr-1" /> เพิ่มลิงก์</button>
                            </div>
                            <div className="space-y-3">
                               {links.map((link) => {
@@ -565,7 +565,7 @@ export const Dashboard: React.FC = () => {
                                 const Icon = platform.icon;
                                 const urlValid = !link.url || isValidUrl(link.url);
                                 return (
-                                  <div key={link.id} className="flex items-center gap-2 p-2 bg-black/10 rounded-lg border border-white/10">
+                                  <div key={link.id} className="flex items-center gap-2 p-2 bg-black/10 rounded-lg border border-[var(--glass-border)]">
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${urlValid ? 'bg-[var(--pink)]/20 text-[var(--pink)]' : 'bg-red-500/20 text-red-400'}`}>
                                       <Icon size={16} />
                                     </div>
@@ -599,7 +599,7 @@ export const Dashboard: React.FC = () => {
                                 onChange={e => setPromptpay(e.target.value.replace(/[^0-9]/g, '').slice(0, 13))}
                                 inputMode="numeric"
                                 placeholder="0812345678"
-                                className="w-full p-3 rounded-lg mt-1 bg-black/10 border border-white/10 font-mono"
+                                className="w-full p-3 rounded-lg mt-1 bg-black/10 border border-[var(--glass-border)] font-mono"
                               />
                               {acceptSupport && promptpay.length !== 10 && promptpay.length !== 13 && (
                                 <p className="text-[10px] text-red-400 mt-1">⚠️ ต้องกรอกเบอร์ 10 หลัก หรือเลขบัตร 13 หลัก</p>
@@ -618,8 +618,8 @@ export const Dashboard: React.FC = () => {
                           <p className="text-sm truncate font-bold">{shareLink}</p>
                       </div>
                       <div className="flex space-x-2">
-                          <button onClick={() => navigator.clipboard.writeText(shareLink)} className="p-2 bg-white/10 rounded-lg hover:bg-white/20"><Copy size={16}/></button>
-                          <a href={shareLink} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/10 rounded-lg hover:bg-white/20"><ExternalLink size={16}/></a>
+                          <button onClick={() => navigator.clipboard.writeText(shareLink)} className="p-2 bg-[var(--glass-border)] rounded-lg hover:bg-white/20"><Copy size={16}/></button>
+                          <a href={shareLink} target="_blank" rel="noopener noreferrer" className="p-2 bg-[var(--glass-border)] rounded-lg hover:bg-white/20"><ExternalLink size={16}/></a>
                       </div>
                   </div>
               )}

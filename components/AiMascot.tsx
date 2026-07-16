@@ -254,7 +254,7 @@ export const AiMascot: React.FC = () => {
       <button
         onClick={() => setOpen(o => !o)}
         title={`${aiName} — ผู้ช่วยส่วนตัว`}
-        className="fixed bottom-5 right-5 z-[146] cursor-pointer select-none"
+        className="fixed bottom-[78px] right-5 z-[146] cursor-pointer select-none md:bottom-5"
         aria-label="เปิดแชทกับผู้ช่วย"
       >
         <div className="relative" style={{ animation: 'mascotBob 2.4s ease-in-out infinite' }}>
@@ -278,7 +278,7 @@ export const AiMascot: React.FC = () => {
 
       {/* แชท面板 */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-[147] w-[340px] max-w-[92vw] h-[480px] max-h-[82vh] glass-card flex flex-col shadow-2xl animate-fade-in" style={{ background: 'var(--glass-bg)', borderColor: outfit.accent }}>
+        <div className="fixed bottom-[78px] right-5 z-[147] w-[340px] max-w-[92vw] h-[480px] max-h-[82vh] glass-card flex flex-col shadow-2xl animate-fade-in md:bottom-5" style={{ background: 'var(--glass-bg)', borderColor: outfit.accent }}>
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b-2" style={{ borderColor: 'var(--glass-border)' }}>
             <div className="flex items-center gap-2 min-w-0">
@@ -313,7 +313,7 @@ export const AiMascot: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={() => setShowWardrobe(w => !w)} title="ตู้เสื้อผ้า 👕" className="p-1.5 rounded-lg hover:bg-white/10" style={{ color: outfit.shirt }}>
+              <button onClick={() => setShowWardrobe(w => !w)} title="ตู้เสื้อผ้า 👕" className="p-1.5 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: outfit.shirt }}>
                 <Shirt size={18} />
               </button>
               <button onClick={() => setOpen(false)} className="opacity-60 hover:opacity-100 p-1.5"><X size={18} style={{ color: 'var(--text-primary)' }} /></button>
@@ -348,7 +348,7 @@ export const AiMascot: React.FC = () => {
                   aria-label="ชื่อผู้ช่วย"
                 />
                 <button onClick={saveName} className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-white" style={{ background: outfit.shirt }}>บันทึก</button>
-                <button onClick={resetName} title="รีเซ็ตชื่อ" className="p-1.5 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-muted)' }}><RotateCcw size={15} /></button>
+                <button onClick={resetName} title="รีเซ็ตชื่อ" className="p-1.5 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: 'var(--text-muted)' }}><RotateCcw size={15} /></button>
               </div>
               <p className="text-[10px] opacity-60 leading-snug">🪪 เปลี่ยนชื่อได้ชั่วคราว (βETA) — ระบบเปลี่ยนชื่อเต็มรูปแบบกำลังพัฒนาในอนาคต</p>
             </div>
@@ -388,9 +388,9 @@ export const AiMascot: React.FC = () => {
 
           {/* Quick actions */}
           <div className="flex gap-1 px-2 py-1.5 border-t" style={{ borderColor: 'var(--glass-border)' }}>
-            <button onClick={() => navigate('/dashboard')} className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-secondary)' }}><LayoutDashboard size={12} />โปรไฟล์</button>
-            <button onClick={() => navigate('/feed')} className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-secondary)' }}><Newspaper size={12} />ฟีด</button>
-            <button onClick={() => navigate('/explore')} className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-secondary)' }}><MapIcon size={12} />แผนที่</button>
+            <button onClick={() => navigate('/dashboard')} className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: 'var(--text-secondary)' }}><LayoutDashboard size={12} />โปรไฟล์</button>
+            <button onClick={() => navigate('/feed')} className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: 'var(--text-secondary)' }}><Newspaper size={12} />ฟีด</button>
+            <button onClick={() => navigate('/explore')} className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: 'var(--text-secondary)' }}><MapIcon size={12} />แผนที่</button>
           </div>
 
           {/* Input */}

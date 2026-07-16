@@ -110,7 +110,7 @@ export const Navbar: React.FC = () => {
         onClick={() => setDrawerOpen(o => !o)}
         aria-label={drawerOpen ? 'ปิดเมนู' : 'เปิดเมนู'}
         aria-expanded={drawerOpen}
-        className="md:hidden p-2 -ml-1 rounded-lg transition-colors hover:bg-white/10"
+        className="md:hidden p-2 -ml-1 rounded-lg transition-colors hover:bg-[var(--glass-border)]"
         style={{ color: 'var(--text-secondary)' }}
       >
         {drawerOpen ? <X size={24} /> : <Menu size={24} />}
@@ -171,7 +171,7 @@ export const Navbar: React.FC = () => {
         {/* สลับธีม */}
         <button
           onClick={toggleTheme}
-          className="ml-1 p-2 rounded-lg transition-colors hover:bg-white/10"
+          className="ml-1 p-2 rounded-lg transition-colors hover:bg-[var(--glass-border)]"
           style={{ color: 'var(--text-primary)', background: 'var(--glass-border)' }}
           aria-label="สลับธีม"
         >
@@ -206,7 +206,7 @@ export const Navbar: React.FC = () => {
                 <Link
                   to="/dashboard"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--glass-border)] transition-colors"
                   style={{ color: 'var(--text-primary)', fontFamily: fonts.body }}
                   role="menuitem"
                 >
@@ -222,10 +222,10 @@ export const Navbar: React.FC = () => {
                   </div>
                 </Link>
                 <div className="my-1 h-px" style={{ background: 'var(--glass-border)' }} />
-                <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }} role="menuitem">
+                <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--glass-border)] text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }} role="menuitem">
                   <LayoutDashboard size={18} /> โปรไฟล์ของฉัน
                 </Link>
-                <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: palette.pink }} role="menuitem">
+                <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--glass-border)] text-sm font-semibold transition-colors" style={{ color: palette.pink }} role="menuitem">
                   <LogOut size={18} /> ออกจากระบบ
                 </button>
               </div>
@@ -260,7 +260,7 @@ export const Navbar: React.FC = () => {
           >
             <div className="flex items-center justify-between px-4 h-[60px] border-b" style={{ borderColor: 'var(--glass-border)' }}>
               <span className="text-[11px] font-mono tracking-[0.18em] uppercase" style={{ color: 'var(--blueprint)' }}>Menu</span>
-              <button onClick={() => setDrawerOpen(false)} aria-label="ปิดเมนู" className="p-2 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-secondary)' }}>
+              <button onClick={() => setDrawerOpen(false)} aria-label="ปิดเมนู" className="p-2 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: 'var(--text-secondary)' }}>
                 <X size={22} />
               </button>
             </div>
@@ -322,10 +322,10 @@ export const Navbar: React.FC = () => {
             <div className="p-3 border-t" style={{ borderColor: 'var(--glass-border)' }}>
               {user ? (
                 <div className="space-y-1">
-                  <Link to="/dashboard" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }} role="menuitem">
+                  <Link to="/dashboard" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--glass-border)] text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }} role="menuitem">
                     <LayoutDashboard size={20} /> โปรไฟล์ของฉัน
                   </Link>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-sm font-semibold transition-colors" style={{ color: palette.pink }} role="menuitem">
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--glass-border)] text-sm font-semibold transition-colors" style={{ color: palette.pink }} role="menuitem">
                     <LogOut size={20} /> ออกจากระบบ
                   </button>
                 </div>
@@ -339,6 +339,50 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ===== แถบแท็บล่าง (มือถือเท่านั้น) — สลับหน้าหลักได้ทันทีเหมือน FB/IG ===== */}
+      <nav
+        aria-label="เมนูหลัก"
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-stretch justify-around"
+        style={{
+          height: '58px',
+          background: 'var(--glass-bg)',
+          borderTop: '1px solid var(--glass-border)',
+          backdropFilter: 'blur(14px)',
+          boxShadow: '0 -6px 18px -16px rgba(31,27,22,0.5)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {NAV_ITEMS.map(item => {
+          const Icon = item.icon;
+          const active = isActive(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+              style={{ color: active ? palette.orange : 'var(--text-secondary)', fontFamily: fonts.body }}
+            >
+              <Icon size={22} className="flex-shrink-0" />
+              <span className="text-[10px] font-semibold leading-none">{item.label}</span>
+            </Link>
+          );
+        })}
+        {user?.role === 'admin' && (
+          <Link
+            to="/admin"
+            aria-label="แผงแอดมิน"
+            aria-current={isActive('/admin') ? 'page' : undefined}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+            style={{ color: isActive('/admin') ? palette.orange : 'var(--text-secondary)', fontFamily: fonts.body }}
+          >
+            <Shield size={22} className="flex-shrink-0" />
+            <span className="text-[10px] font-semibold leading-none">แอดมิน</span>
+          </Link>
+        )}
+      </nav>
     </header>
   );
 };

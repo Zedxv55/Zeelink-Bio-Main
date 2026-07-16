@@ -57,15 +57,15 @@ export const Vote: React.FC = () => {
                     <Search className="absolute left-2.5 top-2.5 text-gray-400" size={14} />
                   </div>
                </div>
-               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+               <div className="space-y-3 pr-2">
                   {filtered.map(q => (
-                    <div key={q.id} className="glass-card p-5 flex justify-between items-center hover:bg-white/10 transition-all border-[var(--orange)] hover-glow-cyan">
+                    <div key={q.id} className="glass-card p-5 flex justify-between items-center hover:bg-[var(--glass-border)] transition-all border-[var(--orange)] hover-glow-cyan">
                        <div className="flex-1 pr-4">
                           <p className="font-bold text-sm mb-1">{q.text}</p>
                           <p className="text-[10px] opacity-60">โดย @{q.username} • {new Date(q.createdAt).toLocaleDateString()}</p>
                        </div>
-                       <button onClick={() => voteQuestion(q.id)} className={`flex flex-col items-center p-2 rounded-lg min-w-[50px] transition-all ${q.votedUserIds.includes(user?.id || '') ? 'text-pink-500' : 'opacity-50'}`}>
-                          <Heart size={18} className={q.votedUserIds.includes(user?.id || '') ? 'fill-pink-500' : ''} />
+                       <button onClick={() => voteQuestion(q.id)} className={`flex flex-col items-center p-2 rounded-lg min-w-[50px] transition-all ${q.votedUserIds.includes(user?.id || '') ? 'text-[var(--orange)]' : 'opacity-50'}`}>
+                          <Heart size={18} className={q.votedUserIds.includes(user?.id || '') ? 'fill-[var(--orange)]' : ''} />
                           <span className="text-[10px] font-bold mt-1">{q.votes}</span>
                        </button>
                     </div>
@@ -100,14 +100,14 @@ export const Vote: React.FC = () => {
                         <div className="flex justify-between items-start mb-6">
                             <h3 className="text-lg font-bold leading-relaxed flex-1 pr-10">{q.text}</h3>
                             <div className="flex flex-col items-center">
-                                <span className="text-2xl font-bold text-pink-500">{q.votes}</span>
+                                <span className="text-2xl font-bold text-[var(--orange)]">{q.votes}</span>
                                 <span className="text-[8px] uppercase tracking-widest opacity-60">VOTES</span>
                             </div>
                         </div>
                         
                         {/* Profile Info in Question */}
                         {asker && (
-                           <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                           <div className="mt-4 pt-4 border-t border-[var(--glass-border)] flex items-center justify-between">
                               <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate(`/${asker.username}`)}>
                                  <img src={asker.photoUrl} className="w-10 h-10 rounded-full object-cover border border-white/20" />
                                  <div>
@@ -116,8 +116,8 @@ export const Vote: React.FC = () => {
                                  </div>
                               </div>
                               <div className="flex space-x-2">
-                                 <button onClick={() => voteQuestion(q.id)} className="p-2 bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 rounded-full transition-all"><Heart size={18} className={q.votedUserIds.includes(user?.id || '') ? 'fill-pink-500' : ''}/></button>
-                                 <button onClick={() => navigate(`/${asker.username}`)} className="p-2 bg-white/10 hover:bg-white/20 text-[var(--blue)] rounded-full transition-all"><User size={18}/></button>
+                                 <button onClick={() => voteQuestion(q.id)} className="p-2 bg-[var(--orange)]/10 hover:bg-[var(--orange)]/20 text-[var(--orange)] rounded-full transition-all"><Heart size={18} className={q.votedUserIds.includes(user?.id || '') ? 'fill-[var(--orange)]' : ''}/></button>
+                                 <button onClick={() => navigate(`/${asker.username}`)} className="p-2 bg-[var(--glass-border)] hover:bg-white/20 text-[var(--blue)] rounded-full transition-all"><User size={18}/></button>
                               </div>
                            </div>
                         )}
