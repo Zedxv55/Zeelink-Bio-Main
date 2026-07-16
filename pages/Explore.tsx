@@ -8,6 +8,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Logo } from '../components/Logo';
 import { DemoOverlay } from '../components/DemoOverlay';
+import { SkeletonRow } from '../components/ui/Skeleton';
 import { haversineKm } from '../lib/ranking';
 import { getSponsoredIds } from '../lib/sponsor';
 
@@ -76,7 +77,7 @@ const PrivacyNotice = ({ onClose }: { onClose: () => void }) => (
 );
 
 export const Explore: React.FC = () => {
-  const { usersList, profile: userProfile, toggleLike, user, followingIds } = useAuth();
+  const { usersList, profile: userProfile, toggleLike, user, followingIds, isLoading } = useAuth();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [search, setSearch] = useState('');
   const [showIntro, setShowIntro] = useState(true);
@@ -492,7 +493,19 @@ export const Explore: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {shown.map(profile => (
+          {isLoading ? (
+            <>
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </>
+          ) : shown.length === 0 ? (
+            <div className="text-center mt-10 space-y-2">
+              <div className="text-3xl">🧭</div>
+              <p className="text-xs opacity-60">ไม่พบผู้ใช้ในพื้นที่นี้</p>
+              <p className="text-[10px] opacity-40 leading-relaxed px-4">เปิด &quot;แสดงในแผนที่&quot; ในหน้าโปรไฟล์ เพื่อให้คนอื่นเจอคุณบนแผนที่</p>
+            </div>
+          ) : shown.map(profile => (
             <div key={profile.id} onClick={() => handleUserClick(profile)} className="p-3 bg-[var(--glass-border)] rounded-xl border border-[var(--glass-border)] hover:border-[var(--orange)] cursor-pointer transition-all flex items-center space-x-3 group relative hover-glow-cyan">
                 <div className="relative">
                     <img src={profile.photoUrl} className="w-10 h-10 rounded-full object-cover border border-white/20" />
@@ -508,9 +521,6 @@ export const Explore: React.FC = () => {
                 </div>
             </div>
           ))}
-          {shown.length === 0 && (
-            <p className="text-center text-xs opacity-50 mt-8">ไม่พบผู้ใช้ในพื้นที่นี้</p>
-          )}
         </div>
       </div>
 

@@ -75,6 +75,9 @@ const FLOATING_HINTS = [
   'คลิกฉันเพื่อคุยได้!',
 ];
 
+// แนะนำคำถามด่วน (βETA) — คลิกแล้วส่งเลย ไม่ต้องพิมพ์
+const QUICK_REPLIES = ['สร้างพอร์ตโฟลิโอ', 'แต่งตัวผู้ช่วย', 'แผนที่ & ตำแหน่ง', 'ฟีดโซเชียล'];
+
 // แอดมินจำลอง: ตอบกลับภาษาไทยตามคำสำคัญ (fallback เวลา AI ไม่พร้อม)
 const simulatedAdmin = (text: string): string => {
   const t = text.toLowerCase();
@@ -177,8 +180,8 @@ export const AiMascot: React.FC = () => {
     }
   };
 
-  const handleSend = async () => {
-    const text = input.trim();
+  const handleSend = async (preset?: string) => {
+    const text = (preset ?? input).trim();
     if (!text || typing) return;
 
     if (aiDisabledByAdmin) {
@@ -393,6 +396,22 @@ export const AiMascot: React.FC = () => {
             <button onClick={() => navigate('/explore')} className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg hover:bg-[var(--glass-border)]" style={{ color: 'var(--text-secondary)' }}><MapIcon size={12} />แผนที่</button>
           </div>
 
+          {/* Quick replies (βETA) */}
+          {!typing && (
+            <div className="flex flex-wrap gap-1.5 px-2 pb-2 pt-1 border-t" style={{ borderColor: 'var(--glass-border)' }}>
+              {QUICK_REPLIES.map(q => (
+                <button
+                  key={q}
+                  onClick={() => handleSend(q)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold transition-transform hover:scale-105"
+                  style={{ background: 'var(--glass-border)', color: 'var(--text-secondary)' }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Input */}
           <div className="flex items-center gap-2 p-2 border-t" style={{ borderColor: 'var(--glass-border)' }}>
             <input
@@ -402,7 +421,7 @@ export const AiMascot: React.FC = () => {
               placeholder="พิมพ์คำถามหรือสั่งการ..."
               className="flex-1 px-3 py-2 rounded-full text-[13px] outline-none"
             />
-            <button onClick={handleSend} disabled={!input.trim() || typing} className="w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-50" style={{ background: outfit.shirt, color: '#fff' }}>
+            <button onClick={() => handleSend()} disabled={!input.trim() || typing} className="w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-50" style={{ background: outfit.shirt, color: '#fff' }}>
               <Send size={16} />
             </button>
           </div>

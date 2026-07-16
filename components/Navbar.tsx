@@ -35,6 +35,8 @@ export const Navbar: React.FC = () => {
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // ซ่อนแถบนำทางตอนเลื่อนลง / โชว์ตอนเลื่อนขึ้น (แบบ Instagram)
+  const [navHidden, setNavHidden] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +82,19 @@ export const Navbar: React.FC = () => {
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
 
+  // ซ่อนแถบเมนูตอนเลื่อนลง / โชว์ตอนเลื่อนขึ้น (แบบ Instagram)
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > lastY && y > 80) setNavHidden(true);
+      else setNavHidden(false);
+      lastY = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const isActive = (to: string): boolean => location.pathname.startsWith(to);
 
   const submitSearch = (e: React.FormEvent) => {
@@ -90,7 +105,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 flex items-center gap-2 px-3 sm:px-4"
+      className={`fixed top-0 left-0 right-0 z-50 flex items-center gap-2 px-3 sm:px-4 transition-transform duration-300 ${navHidden ? '-translate-y-[110%]' : ''}`}
       style={{
         height: HEADER_H,
         background: 'var(--glass-bg)',
@@ -343,7 +358,7 @@ export const Navbar: React.FC = () => {
       {/* ===== แถบแท็บล่าง (มือถือเท่านั้น) — สลับหน้าหลักได้ทันทีเหมือน FB/IG ===== */}
       <nav
         aria-label="เมนูหลัก"
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-stretch justify-around"
+        className={`fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-stretch justify-around transition-transform duration-300 ${navHidden ? 'translate-y-[140%]' : ''}`}
         style={{
           height: '58px',
           background: 'var(--glass-bg)',
